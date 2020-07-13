@@ -1,15 +1,23 @@
 NAME=Simple Pascal Interpreter
 BIN_LIB=SPI
+SRC_FLR=QSOURCE
 DBGVIEW=*SOURCE
 TGTRLS=V7R3M0
 SHELL=/QOpenSys/usr/bin/qsh
 
 #----------
 
-all:                  
+all: calc6.rpgle calc6.pgm
+
+#----------
+
+%.rpgle:
 	liblist -a $(BIN_LIB);\
-	system "CRTRPGMOD MODULE($(BIN_LIB)/CALC6) SRCSTMF('calc6.rpgle') TEXT('$(NAME)') REPLACE(*YES) DBGVIEW($(DBGVIEW)) TGTRLS($(TGTRLS))"
-	system "CRTPGM PGM($(BIN_LIB)/CALC6) ENTMOD($(BIN_LIB)/CALC6) MODULE($(BIN_LIB)/CALC6) TEXT('$(NAME)') REPLACE(*YES) TGTRLS($(TGTRLS))"
+	system "CRTRPGMOD MODULE($(BIN_LIB)/$*) SRCSTMF('$(SRC_FLR)/$*.rpgle') TEXT('$(NAME)') REPLACE(*YES) DBGVIEW($(DBGVIEW)) TGTRLS($(TGTRLS))"
+
+%.pgm:
+	liblist -a $(BIN_LIB);\
+	system "CRTPGM PGM($(BIN_LIB)/$*) ENTMOD($(BIN_LIB)/$*) MODULE(($(BIN_LIB)/*ALL)) TEXT('$(NAME)') REPLACE(*YES) TGTRLS($(TGTRLS))"
 
 #----------
 
