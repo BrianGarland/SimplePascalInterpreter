@@ -1,5 +1,4 @@
-# SimplePascalInterpreter
-Simple Pascal Interpreter
+# Simple Pascal Interpreter for IBM i
 
 This is my attempt to use RPGLE to create a Pascal Interpreter.  
 
