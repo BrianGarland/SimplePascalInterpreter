@@ -12,7 +12,7 @@ I'm following Ruslan Spivak's blog posts where he does this in Python.
 ### Installation 
 
 1. `git clone` this repository
-2. `cd 'partxx` (change to directory you want to build)
+2. `cd partxx` (change to directory you want to build)
 2. `gmake` (available from yum)
 
 ### Usage instructions
