@@ -23,7 +23,7 @@ Starting in part 9 I worked on a UI for the interpreter.
 	1. Parts 1 to 6: `CALL PARTxx`
 	2. Parts 7 and 8: `SPI` 
 	3. Part 9 (use part09a folder): `SPI xxxxxx` where xxxxx is the path to the Pascal file 
-	4. Part 10: `SPI` and then use function keys to load and run your Pascal file
+	4. Part 10 and up: `SPI` and then use function keys to load and run your Pascal file
 
 ### License
 
