@@ -19,7 +19,7 @@ parser.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h
 
 interpret.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
 
-spi.mod: spifm.dspf headers/stdio.rpgle_h headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
+spi.rpgle: spifm.dspf headers/stdio.rpgle_h headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
 
 #----------
 
