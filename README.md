@@ -19,8 +19,9 @@ I'm following Ruslan Spivak's blog posts where he does this in Python.
 
 1. `ADDLIBLE SPI` (or whatever library you used)
 2. Depending on which part you are running
-	a. `CALL PARTxx` (for parts 1 to 6)
-	b. `SPI` (for parts 7 and beyond) 
+	1. For parts 1 to 6: `CALL PARTxx`
+	2. For parts 7 and 8: `SPI` 
+	3. For part 9 (use part09a folder): `SPI xxxxxx` where xxxxx is the path to the Pascal file 
 
 ### License
 

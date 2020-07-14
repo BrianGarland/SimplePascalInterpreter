@@ -1,0 +1,64 @@
+      /IF NOT DEFINED(ifs_h)
+      /DEFINE ifs_h
+
+
+      * Close an IFS file
+     D close           PR            10I 0 EXTPROC('close')
+     D  filehandle                   10I 0 VALUE
+
+      * Open an IFS file
+     D open            PR            10I 0 EXTPROC('open')
+     D  filename                       *   VALUE OPTIONS(*STRING)               null terminated str
+     D  openflags                    10I 0 VALUE
+     D  mode                         10U 0 VALUE OPTIONS(*nopass)
+     D  codepage                     10U 0 VALUE OPTIONS(*nopass)
+
+      * Read data from an IFS file
+     D read            PR            10I 0 EXTPROC('read')
+     D  filehandle                   10I 0 VALUE
+     D  datareceived                   *   VALUE
+     D  nbytes                       10U 0 VALUE
+
+
+      * File Access Modes for open()
+     D O_RDONLY        S             10I 0 INZ(1)
+     D O_WRONLY        S             10I 0 INZ(2)
+     D O_RDWR          S             10I 0 INZ(4)
+
+      * oflag VALUEs for open()
+     D O_CREAT         S             10I 0 INZ(8)
+     D O_EXCL          S             10I 0 INZ(16)
+     D O_TRUNC         S             10I 0 INZ(64)
+
+      * File Status Flags for open() and fcntl()
+     D O_NONBLOCK      S             10I 0 INZ(128)
+     D O_APPEND        S             10I 0 INZ(256)
+
+      * oflag Share Mode VALUEs for open()
+     D O_SHARE_RDONLY  S             10I 0 INZ(65536)
+     D O_SHARE_WRONLY  S             10I 0 INZ(131072)
+     D O_SHARE_RDWR    S             10I 0 INZ(262144)
+     D O_SHARE_NONE    S             10I 0 INZ(524288)
+
+      * File permissions
+     D S_IRUSR         S             10I 0 INZ(256)                             Read for owner
+     D S_IWUSR         S             10I 0 INZ(128)                             Write for owner
+     D S_IXUSR         S             10I 0 INZ(64)                              Execute and Search f
+     D S_IRWXU         S             10I 0 INZ(448)                             Read, Write, Execute
+     D S_IRGRP         S             10I 0 INZ(32)                              Read for group
+     D S_IWGRP         S             10I 0 INZ(16)                              Write for group
+     D S_IXGRP         S             10I 0 INZ(8)                               Execute and Search f
+     D S_IRWXG         S             10I 0 INZ(56)                              Read, Write, Execute
+     D S_IROTH         S             10I 0 INZ(4)                               Read for other
+     D S_IWOTH         S             10I 0 INZ(2)                               Write for other
+     D S_IXOTH         S             10I 0 INZ(1)                               Execute and Search f
+     D S_IRWXO         S             10I 0 INZ(7)
+
+      * Misc
+     D O_TEXTDATA      S             10I 0 INZ(16777216)                        text data flag
+     D O_CODEPAGE      S             10I 0 INZ(8388608)                         code page flag
+     D O_INHERITMODE   S             10I 0 INZ(134217728)                       inherit mode flag
+     D O_LARGEFILE     S             10I 0 INZ(536870912)                       large file access
+
+      /ENDIF
+

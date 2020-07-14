@@ -1,0 +1,92 @@
+**FREE
+/IF NOT DEFINED(parser_h)
+/DEFINE parser_h
+
+
+//--------------------------------------
+// Parser
+//--------------------------------------
+
+DCL-DS node_t QUALIFIED TEMPLATE;
+    left POINTER;
+    token LIKEDS(token_t) INZ(*LIKEDS);
+    right POINTER;
+END-DS;
+
+DCL-C MAX_STATEMENTS 5000;
+
+DCL-DS Child_t QUALIFIED TEMPLATE;
+    NumChildren UNS(10);
+    Children LIKEDS(node_t) INZ(*LIKEDS) DIM(MAX_STATEMENTS);
+END-DS;
+
+DCL-DS Parser_t QUALIFIED TEMPLATE;
+    lexer LIKEDS(Lexer_t) INZ(*LIKEDS);
+    current_token LIKEDS(Token_t) INZ(*LIKEDS);
+END-DS;
+
+
+
+DCL-PR BinOp_Init POINTER;
+    Left POINTER VALUE;
+    Op LIKEDS(Token_t) VALUE;
+    Right POINTER VALUE;
+END-PR;
+
+DCL-PR Num_Init POINTER;
+    token LIKEDS(Token_t) VALUE;
+END-PR;
+
+DCL-PR UnaryOp_Init POINTER;
+    op LIKEDS(Token_t) VALUE;
+    expr POINTER VALUE;
+END-PR;
+
+DCL-PR Compound_Statement_Init POINTER;
+END-PR;
+
+DCL-PR Assign_Init POINTER;
+    Left POINTER VALUE;
+    Op LIKEDS(Token_t) VALUE;
+    Right POINTER VALUE;
+END-PR;
+
+DCL-PR Var_Init POINTER;
+    token LIKEDS(Token_t) VALUE;
+END-PR;
+
+DCL-PR NoOp_Init POINTER;
+END-PR;
+
+
+
+DCL-PR Parser_Init LIKEDS(Parser_t);
+    lexer LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Parser_Error;
+    self LIKEDS(Parser_t);
+END-PR;
+
+DCL-PR Parser_Eat;
+    self LIKEDS(Parser_t);
+    token_type LIKE(ShortString) VALUE;
+END-PR;
+
+DCL-PR Parser_Factor POINTER;
+    self LIKEDS(Parser_t);
+END-PR;
+
+DCL-PR Parser_Term POINTER;
+    self LIKEDS(Parser_t);
+END-PR;
+
+DCL-PR Parser_Expr POINTER;
+    self LIKEDS(Parser_t);
+END-PR;
+
+DCL-PR Parser_Parse POINTER;
+    self LIKEDS(Parser_t);
+END-PR;
+
+/ENDIF
