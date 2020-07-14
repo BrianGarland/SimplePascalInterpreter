@@ -1,28 +1,34 @@
 NAME=Simple Pascal Interpreter
 BIN_LIB=SPI
+SRC_FLR=QSOURCE
 DBGVIEW=*SOURCE
 TGTRLS=V7R3M0
 SHELL=/QOpenSys/usr/bin/qsh
 
 #----------
 
-all: spi.pgm
+all: spi.pgm spi.cmd
 
-spi.pgm: interpret.mod lexer.mod parser.mod spi.mod
+spi.pgm: interpret.rpgle lexer.rpgle parser.rpgle spi.rpgle
 
-lexer.mod: headers/util.rpgle_h headers/lexer.rpgle_h
+lexer.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h
 
-parser.mod: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h
+parser.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h
 
-interpret.mod: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
+interpret.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
 
 spi.mod: headers/stdio.rpgle_h headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/symbols.rpgle_h headers/interpret.rpgle_h
 
 #----------
 
-%.mod: %.rpgle
+%.cmd:
+	-system -qi "CRTSRCPF FILE($(BIN_LIB)/QSOURCE) RCDLEN(112)"
+	system "CPYFRMSTMF FROMSTMF('$(SRC_FLR)/$*.cmd') TOMBR('/QSYS.lib/$(BIN_LIB).lib/QSOURCE.file/$*.mbr') MBROPT(*REPLACE)"
+	system "CRTCMD CMD($(BIN_LIB)/$*) PGM($(BIN_LIB)/$*) SRCFILE($(BIN_LIB)/QSOURCE) SRCMBR($*) TEXT('$(NAME)') REPLACE(*YES)"
+	
+%.rpgle:
 	liblist -a $(BIN_LIB);\
-	system "CRTRPGMOD MODULE($(BIN_LIB)/$*) SRCSTMF('$*.rpgle') TEXT('$(NAME)') REPLACE(*YES) DBGVIEW($(DBGVIEW)) TGTRLS($(TGTRLS))"
+	system "CRTRPGMOD MODULE($(BIN_LIB)/$*) SRCSTMF('$(SRC_FLR)/$*.rpgle') TEXT('$(NAME)') REPLACE(*YES) DBGVIEW($(DBGVIEW)) TGTRLS($(TGTRLS))"
 
 %.pgm:
 	liblist -a $(BIN_LIB);\
