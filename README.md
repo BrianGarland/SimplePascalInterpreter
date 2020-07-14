@@ -8,6 +8,7 @@ I'm following Ruslan Spivak's blog posts where he does this in Python.
 
 [Ruslan's github](https://github.com/rspivak/lsbasi)
 
+Starting in part 9 I worked on a UI for the interpreter. 
 
 ### Installation 
 
@@ -19,9 +20,10 @@ I'm following Ruslan Spivak's blog posts where he does this in Python.
 
 1. `ADDLIBLE SPI` (or whatever library you used)
 2. Depending on which part you are running
-	1. For parts 1 to 6: `CALL PARTxx`
-	2. For parts 7 and 8: `SPI` 
-	3. For part 9 (use part09a folder): `SPI xxxxxx` where xxxxx is the path to the Pascal file 
+	1. Parts 1 to 6: `CALL PARTxx`
+	2. Parts 7 and 8: `SPI` 
+	3. Part 9 (use part09a folder): `SPI xxxxxx` where xxxxx is the path to the Pascal file 
+	4. Part 10: `SPI` and then use function keys to load and run your Pascal file
 
 ### License
 
