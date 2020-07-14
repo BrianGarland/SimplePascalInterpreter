@@ -1,0 +1,72 @@
+**FREE
+/IF NOT DEFINED(lexer_h)
+/DEFINE lexer_h
+
+
+DCL-C INTEGER 'INTEGER';
+DCL-C PLUS 'PLUS';
+DCL-C MINUS 'MINUS';
+DCL-C MUL 'MUL';
+DCL-C DIV 'DIV';
+DCL-C LPAREN '(';
+DCL-C RPAREN ')';
+DCL-C EOF 'EOF';
+
+DCL-C NONE x'FF';
+
+
+//--------------------------------------
+// Token
+//--------------------------------------
+
+DCL-DS Token_t QUALIFIED TEMPLATE;
+    type   LIKE(MyString) INZ('');
+    value  LIKE(MyString) INZ('');
+END-DS;
+
+DCL-PR Token_Init LIKEDS(Token_t);
+    type LIKE(MyString) VALUE;
+    value LIKE(MyString) VALUE;
+END-PR;
+
+DCL-PR Token_Error LIKE(MyString);
+    self LIKEDS(Token_t);
+END-PR;
+
+
+
+//--------------------------------------
+// Lexer
+//--------------------------------------
+
+DCL-DS Lexer_t QUALIFIED TEMPLATE;
+    text          LIKE(MyString) INZ('');
+    pos           UNS(5) INZ(1);
+    current_char  LIKE(MyString) INZ('');
+END-DS;
+
+DCL-PR Lexer_Init LIKEDS(Lexer_t);
+    text LIKE(MyString);
+END-PR;
+
+DCL-PR Lexer_Error;
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Advance;
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Skip_Whitespace;
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Integer LIKE(MyString);
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Get_Next_Token LIKEDS(token_t);
+    self LIKEDS(Lexer_t);
+END-PR;
+
+/ENDIF

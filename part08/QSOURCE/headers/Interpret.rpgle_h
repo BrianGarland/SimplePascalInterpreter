@@ -1,0 +1,34 @@
+**FREE
+/IF NOT DEFINED(interpreter_h)
+/DEFINE interpreter_h
+
+
+DCL-DS Interpreter_t QUALIFIED TEMPLATE;
+    parser LIKEDS(Parser_t) INZ(*LIKEDS);
+    current_token LIKEDS(Token_t) INZ(*LIKEDS);
+END-DS;
+
+
+DCL-PR Interpreter_Init LIKEDS(Interpreter_t);
+    parser LIKEDS(parser_t);
+END-PR;
+
+
+DCL-PR Interpreter_Visit LIKE(MyString);
+    p_node POINTER VALUE;
+END-PR;
+
+DCL-PR Interpreter_Visit_BinOp LIKE(MyString);
+    p_node POINTER VALUE;
+END-PR;
+
+DCL-PR Interpreter_Visit_Num LIKE(MyString);
+    p_node POINTER VALUE;
+END-PR;
+
+DCL-PR Interpreter_Interpret LIKE(MyString);
+    self LIKEDS(Interpreter_t);
+END-PR;
+
+
+/ENDIF
