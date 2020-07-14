@@ -1,0 +1,98 @@
+      *
+      * The UI portion of a Simple Pascal Interpreter for IBM i
+      *
+      * Copyright 2020, Brian J Garland
+      *
+     A                                      DSPSIZ(*DS4)
+      *
+      *-------------------------------------------------------------------------
+     A          R S1
+      *-------------------------------------------------------------------------
+     A                                      OVERLAY
+     A                                      CLRL(*ALL)
+     A                                      CF03
+     A                                      CF08
+     A                                      CF09
+     A                                      CF10
+     A                                      CF11
+     A                                      CF17
+     A                                      CF18
+     A                                      PAGEUP
+     A                                      PAGEDOWN
+      *
+     A            TITLE1       122A  O  1  5DSPATR(HI)
+      *
+     A            LINE01       122A  O  2  5
+     A            LINE02       122A  O  3  5
+     A            LINE03       122A  O  4  5
+     A            LINE04       122A  O  5  5
+     A            LINE05       122A  O  6  5
+     A            LINE06       122A  O  7  5
+     A            LINE07       122A  O  8  5
+     A            LINE08       122A  O  9  5
+     A            LINE09       122A  O 10  5
+     A            LINE10       122A  O 11  5
+     A            LINE11       122A  O 12  5
+     A            LINE12       122A  O 13  5
+     A            LINE13       122A  O 14  5
+     A            LINE14       122A  O 15  5
+     A            LINE15       122A  O 16  5
+     A            LINE16       122A  O 17  5
+     A            LINE17       122A  O 18  5
+     A            LINE18       122A  O 19  5
+     A            LINE19       122A  O 20  5
+     A            LINE20       122A  O 21  5
+     A            LINE21       122A  O 22  5
+     A            LINE22       122A  O 23  5
+     A            LINE23       122A  O 24  5
+     A            LINE24       122A  O 25  5
+      *
+     A                                 27  2 'F3=Exit'                COLOR(BLU)
+     A                                    +2 'F8=Run'                 COLOR(BLU)
+     A                                    +2 'F9=List'                COLOR(BLU)
+     A                                    +2 'F10=Load'               COLOR(BLU)
+     A                                    +2 'F11=Save'               COLOR(BLU)
+     A                                    +2 'F17=Top'                COLOR(BLU)
+     A                                    +2 'F18=Bottom'             COLOR(BLU)
+      *
+      *-------------------------------------------------------------------------
+     A          R S2
+      *-------------------------------------------------------------------------
+     A                                      OVERLAY
+     A                                      WINDOW(&SLN 3 1 124 *NOMSGLIN)
+     A                                      WDWBORDER((*CHAR '        '))
+     A                                      CF03
+     A                                      CF08
+     A                                      CF09
+     A                                      CF10
+     A                                      CF11
+     A                                      CF17
+     A                                      CF18
+     A                                      PAGEUP
+     A                                      PAGEDOWN
+      *
+     A                                  1  1'$'
+     A            INPUT        120A  B  1  3CHGINPDFT(LC)
+     A            SLN            2S 0P
+      *
+      *-------------------------------------------------------------------------
+     A          R S3
+      *-------------------------------------------------------------------------
+     A                                      OVERLAY
+     A                                      WINDOW(13 26 4 78 *NOMSGLIN)
+     A                                      WDWBORDER((*CHAR '+-+||+-+'))
+     A                                      CF12
+      *
+     A            TITLE3        76A  O  1  2                          DSPATR(HI)
+     A                                  2  1'File name:'
+     A            FILENAME      67A  B    +1CHGINPDFT(LC)
+     A                                  3  1'F12=Cancel'              COLOR(BLU)
+     A            S3ERROR       78A     4  1                          DSPATR(HI)
+      *
+      *-------------------------------------------------------------------------
+     A          R DUMMY
+      *-------------------------------------------------------------------------
+     A                                      ASSUME
+      *
+     A                                 27130' '
+
