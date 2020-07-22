@@ -345,7 +345,8 @@
        History(HistoryLines) = '  Global Variables:';
        FOR i = 1 TO %ELEM(GLOBAL_SCOPE);
            IF GLOBAL_SCOPE(i).Id <> '';
-               result = GLOBAL_SCOPE(i).Id + ' = ' + GLOBAL_SCOPE(i).Value;
+               result = '  ' + GLOBAL_SCOPE(i).Id
+                      + ' = ' + GLOBAL_SCOPE(i).Value;
                HistoryLines += 1;
                History(HistoryLines) = '  ' + result;
            ENDIF;

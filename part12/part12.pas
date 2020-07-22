@@ -3,8 +3,8 @@ VAR
    a : INTEGER;
 
 PROCEDURE P1;
-VAR: REAL;
-   a : REAL;;
+VAR
+   a : REAL;
    k : INTEGER;
 
    PROCEDURE P2;
@@ -20,4 +20,4 @@ END;  {P1}
 
 BEGIN {Part12}
    a := 10;
-END. {Part12}
+END.  {Part12}

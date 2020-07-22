@@ -235,7 +235,7 @@ END-PROC;
 
 DCL-PROC ProcedureDecl_Init;
     DCL-PI *N POINTER;
-        token LIKEDS(Token_t) VALUE;
+        proc_name LIKE(shortString) VALUE;
         block_node POINTER;
     END-PI;
 
@@ -244,7 +244,8 @@ DCL-PROC ProcedureDecl_Init;
     p_Node = %ALLOC(%SIZE(Node_t));
 
     self.left = *NULL;
-    self.token = token;
+    self.token.type = PROCEDURE;
+    self.token.value = proc_name;
     self.right = block_node;
 
     RETURN p_Node;
@@ -361,7 +362,7 @@ DCL-PROC Parser_Declarations;
                              BASED(Var_Declarations2_p);
 
     DCL-S Block_Node POINTER;
-    DCL-S I UNS(10) INZ(0);
+    DCL-S I UNS(10) INZ;
     DCL-S J UNS(10);
     DCL-S proc_name LIKE(shortString);
 
