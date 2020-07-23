@@ -318,8 +318,8 @@
            lexer = Lexer_Init(text);
            parser = Parser_Init(lexer);
            p_tree = Parser_Parse(parser);
-           SymbolTable_Init();
-           SymbolTableBuilder_Visit(p_tree);
+           SemanticAnalyzer_Init();
+           SemanticAnalyzer_Visit(p_tree);
 
            HistoryLines += 1;
            History(HistoryLines) = '';
@@ -334,24 +334,24 @@
                History(HistoryLines) = '  ' + result;
            ENDFOR;
 
-           lexer = Lexer_Init(text);
-           parser = Parser_Init(lexer);
-           interpreter = Interpreter_Init(parser);
-           result = Interpreter_Interpret(interpreter);
+           //lexer = Lexer_Init(text);
+           //parser = Parser_Init(lexer);
+           //interpreter = Interpreter_Init(parser);
+           //result = Interpreter_Interpret(interpreter);
 
-           HistoryLines += 1;
-           History(HistoryLines) = '';
+           //HistoryLines += 1;
+           //History(HistoryLines) = '';
 
-           HistoryLines += 1;
-           History(HistoryLines) = '  Global Variables:';
-           FOR i = 1 TO %ELEM(GLOBAL_SCOPE);
-               IF GLOBAL_SCOPE(i).Id <> '';
-                   result = '  ' + GLOBAL_SCOPE(i).Id
-                          + ' = ' + GLOBAL_SCOPE(i).Value;
-                   HistoryLines += 1;
-                   History(HistoryLines) = '  ' + result;
-               ENDIF;
-           ENDFOR;
+           //HistoryLines += 1;
+           //History(HistoryLines) = '  Global Variables:';
+           //FOR i = 1 TO %ELEM(GLOBAL_SCOPE);
+           //    IF GLOBAL_SCOPE(i).Id <> '';
+           //        result = '  ' + GLOBAL_SCOPE(i).Id
+           //               + ' = ' + GLOBAL_SCOPE(i).Value;
+           //        HistoryLines += 1;
+           //        History(HistoryLines) = '  ' + result;
+           //    ENDIF;
+           //ENDFOR;
 
        ON-ERROR;
 

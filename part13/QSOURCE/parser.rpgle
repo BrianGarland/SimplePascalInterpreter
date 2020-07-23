@@ -368,31 +368,38 @@ DCL-PROC Parser_Declarations;
 
     var_declarations2_p = %ALLOC(%SIZE(node_t) * MAX_STATEMENTS);
 
-    IF self.current_token.type = VAR;
-        Parser_Eat(self:VAR);
-        DOW self.current_token.type = ID;
-            var_declarations_p = Parser_Variable_Declaration(self);
-            FOR j = 1 TO MAX_STATEMENTS;
-                IF var_Declarations(j).Token.Type = *BLANKS;
-                    LEAVE;
-                ENDIF;
-                i += 1;
-                Var_Declarations2(i) = var_Declarations(j);
-            ENDFOR;
-            Parser_Eat(self:SEMI);
-        ENDDO;
-    ENDIF;
+    DOW TRUE;
+        SELECT;
+        WHEN self.current_token.type = VAR;
+            Parser_Eat(self:VAR);
+            DOW self.current_token.type = ID;
+                var_declarations_p = Parser_Variable_Declaration(self);
+                FOR j = 1 TO MAX_STATEMENTS;
+                    IF var_Declarations(j).Token.Type = *BLANKS;
+                        LEAVE;
+                    ENDIF;
+                    i += 1;
+                    Var_Declarations2(i) = var_Declarations(j);
+                ENDFOR;
+                Parser_Eat(self:SEMI);
+            ENDDO;
 
-    DOW self.current_token.type = PROCEDURE;
-        Parser_eat(self:PROCEDURE);
-        proc_name = self.current_token.value;
-        Parser_eat(self:ID);
-        Parser_eat(self:SEMI);
-        block_node = Parser_Block(self);
-        Proc_Declarations_p = ProcedureDecl_Init(proc_name:block_node);
-        i += 1;
-        Var_Declarations2(i) = Proc_Declarations(1);
-        Parser_eat(self:SEMI);
+        WHEN self.current_token.type = PROCEDURE;
+            Parser_eat(self:PROCEDURE);
+            proc_name = self.current_token.value;
+            Parser_eat(self:ID);
+            Parser_eat(self:SEMI);
+            block_node = Parser_Block(self);
+            Proc_Declarations_p = ProcedureDecl_Init(proc_name:block_node);
+            i += 1;
+            Var_Declarations2(i) = Proc_Declarations(1);
+            Parser_eat(self:SEMI);
+
+        OTHER;
+            LEAVE;
+
+        ENDSL;
+
     ENDDO;
 
     RETURN Var_Declarations2_p;

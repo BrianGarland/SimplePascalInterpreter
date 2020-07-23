@@ -1,6 +1,6 @@
-program Main;
-   var x : integer;
+PROGRAM Main;
+   VAR x : INTEGER;
 
-begin
+BEGIN
     x := y;
-end.
+END.

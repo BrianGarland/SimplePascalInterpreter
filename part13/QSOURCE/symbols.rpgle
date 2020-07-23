@@ -87,7 +87,7 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTable_Init EXPORT;
+DCL-PROC SymbolTable_Init;
     DCL-PI *N;
     END-PI;
 
@@ -112,11 +112,11 @@ DCL-PROC SymbolTable_Init_Builtins;
 
     DCL-DS symbol LIKEDS(symbol_t) BASED(p_symbol);
 
-    p_symbol = BuiltinTypeSymbol_Init('INTENGER');
-    SymbolTable_Define(symbol);
+    p_symbol = BuiltinTypeSymbol_Init('INTEGER');
+    SymbolTable_Insert(symbol);
 
     p_symbol = BuiltinTypeSymbol_Init('REAL');
-    SymbolTable_Define(symbol);
+    SymbolTable_Insert(symbol);
 
     RETURN;
 
@@ -124,31 +124,7 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTable_Str EXPORT;
-    DCL-PI *N LIKE(LongString);
-    END-PI;
-
-    DCL-S i UNS(5);
-    DCL-S s LIKE(LongString);
-
-    s = '[';
-    FOR i = 1 TO SymbolTable.NumSymbols;
-        IF i > 1;
-            s += ',';
-        ENDIF;
-        s+= '{"name":"' + SymbolTable.Symbol(i).name + '"'
-          + ',"category":"' + SymbolTable.Symbol(i).category + '"'
-          + ',"type":"' + SymbolTable.Symbol(i).type + '"}';
-    ENDFOR;
-    s += ']';
-
-    RETURN s;
-
-END-PROC;
-
-
-
-DCL-PROC SymbolTable_Define;
+DCL-PROC SymbolTable_Insert;
     DCL-PI *N;
         self LIKEDS(Symbol_t) VALUE;
     END-PI;
@@ -191,7 +167,7 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Init;
+DCL-PROC SemanticAnalyzer_Init EXPORT;
     DCL-PI *N;
     END-PI;
 
@@ -203,7 +179,7 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Error;
+DCL-PROC SemanticAnalyzer_Error;
     DCL-PI *N;
         MsgDta VARCHAR(100) VALUE;
     END-PI;
@@ -219,7 +195,7 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Visit EXPORT;
+DCL-PROC SemanticAnalyzer_Visit EXPORT;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
     END-PI;
@@ -227,49 +203,36 @@ DCL-PROC SymbolTableBuilder_Visit EXPORT;
     DCL-DS node LIKEDS(node_t) BASED(p_node);
 
     SELECT;
-    WHEN node.token.type = PROGRAM;
-        RETURN SymbolTableBuilder_Visit_Program(p_Node);
-
     WHEN node.token.type = BLOCK;
-        RETURN SymbolTableBuilder_Visit_Block(p_Node);
+        RETURN SemanticAnalyzer_Visit_Block(p_Node);
 
-    WHEN node.token.type = VARDECL;
-        RETURN SymbolTableBuilder_Visit_VarDecl(p_Node);
-
-    WHEN node.token.type = NOOP;
-        RETURN SymbolTableBuilder_Visit_NoOp(p_Node);
-
-    WHEN node.token.type = INTEGER_CONST;
-        RETURN SymbolTableBuilder_Visit_Num(p_Node);
-
-    WHEN node.token.type = REAL_CONST;
-        RETURN SymbolTableBuilder_Visit_Num(p_Node);
-
-    WHEN (node.token.type = PLUS OR node.token.type = MINUS)
-        AND node.left = *NULL;
-        RETURN SymbolTableBuilder_Visit_UnaryOp(p_Node);
+    WHEN node.token.type = PROGRAM;
+        RETURN SemanticAnalyzer_Visit_Program(p_Node);
 
     WHEN node.token.type = CHILDREN;
-        RETURN SymbolTableBuilder_Visit_Compound(p_Node);
+        RETURN SemanticAnalyzer_Visit_Compound(p_Node);
 
-    WHEN node.token.type = ASSIGN;
-        RETURN SymbolTableBuilder_Visit_Assign(p_Node);
-
-    WHEN node.token.type = ID;
-        RETURN SymbolTableBuilder_Visit_Var(p_Node);
-
-    WHEN node.token.type = PROCEDURE;
-        RETURN SymbolTableBuilder_Visit_ProcedureDecl(p_Node);
+    WHEN node.token.type = NOOP;
+        RETURN SemanticAnalyzer_Visit_NoOp(p_Node);
 
     WHEN node.token.type = PLUS
         OR node.token.type = MINUS
         OR node.token.type = MUL
         OR node.token.type = INTEGER_DIV
         OR node.token.type = FLOAT_DIV;
-        RETURN SymbolTableBuilder_Visit_BinOp(p_Node);
+        RETURN SemanticAnalyzer_Visit_BinOp(p_Node);
+
+    WHEN node.token.type = VARDECL;
+        RETURN SemanticAnalyzer_Visit_VarDecl(p_Node);
+
+    WHEN node.token.type = ASSIGN;
+        RETURN SemanticAnalyzer_Visit_Assign(p_Node);
+
+    WHEN node.token.type = ID;
+        RETURN SemanticAnalyzer_Visit_Var(p_Node);
 
     OTHER;
-        SymbolTableBuilder_Error('No visit defined for ' + node.token.type);
+        SemanticAnalyzer_Error('No visit defined for ' + node.token.type);
 
     ENDSL;
 
@@ -277,7 +240,7 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Visit_Block;
+DCL-PROC SemanticAnalyzer_Visit_Block;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
     END-PI;
@@ -293,85 +256,29 @@ DCL-PROC SymbolTableBuilder_Visit_Block;
         IF var_Declarations(i).Token.Type = *BLANKS;
             LEAVE;
         ENDIF;
-        SymbolTableBuilder_Visit(%ADDR(Var_Declarations(i)));
+        SemanticAnalyzer_Visit(%ADDR(Var_Declarations(i)));
     ENDFOR;
 
-    RETURN SymbolTableBuilder_Visit(Node.Right);
+    RETURN SemanticAnalyzer_Visit(Node.Right);
 
 END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Visit_Program;
+DCL-PROC SemanticAnalyzer_Visit_Program;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
     END-PI;
 
     DCL-DS node LIKEDS(node_t) BASED(p_node);
 
-    RETURN SymbolTableBuilder_Visit(Node.Right);
+    RETURN SemanticAnalyzer_Visit(Node.Right);
 
 END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Visit_BinOp;
-    DCL-PI *N LIKE(ShortString);
-        p_node POINTER VALUE;
-    END-PI;
-
-    DCL-DS node LIKEDS(node_t) BASED(p_node);
-
-    SymbolTableBuilder_Visit(node.left);
-    SymbolTableBuilder_Visit(node.right);
-
-    RETURN '';
-
-END-PROC;
-
-
-
-DCL-PROC SymbolTableBuilder_Visit_Num;
-    DCL-PI *N LIKE(ShortString);
-        p_node POINTER VALUE;
-    END-PI;
-
-    DCL-DS node LIKEDS(node_t) BASED(p_node);
-
-    RETURN node.token.value;
-
-END-PROC;
-
-
-
-DCL-PROC SymbolTableBuilder_Visit_UnaryOp;
-    DCL-PI *N LIKE(ShortString);
-        p_node POINTER VALUE;
-    END-PI;
-
-    DCL-DS node LIKEDS(node_t) BASED(p_node);
-
-    DCL-S Right INT(10);
-    DCL-S Result INT(10);
-    DCL-S Temp LIKE(ShortString);
-
-    Temp = SymbolTableBuilder_Visit(node.right);
-    Right = %INT(%FLOAT(Temp));
-
-    SELECT;
-    WHEN node.token.type = PLUS;
-        Result = Right;
-    WHEN node.token.type = MINUS;
-        Result = -Right;
-    ENDSL;
-
-    RETURN %CHAR(Result);
-
-END-PROC;
-
-
-
-DCL-PROC SymbolTableBuilder_Visit_Compound;
+DCL-PROC SemanticAnalyzer_Visit_Compound;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
     END-PI;
@@ -384,7 +291,7 @@ DCL-PROC SymbolTableBuilder_Visit_Compound;
     p_Child = Node.Right;
 
     FOR i = 1 TO Child.NumChildren;
-        SymbolTableBuilder_Visit(%ADDR(Child.Children(i)));
+        SemanticAnalyzer_Visit(%ADDR(Child.Children(i)));
     ENDFOR;
 
     RETURN '';
@@ -393,7 +300,7 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Visit_NoOp;
+DCL-PROC SemanticAnalyzer_Visit_NoOp;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
     END-PI;
@@ -404,7 +311,23 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Visit_VarDecl;
+DCL-PROC SemanticAnalyzer_Visit_BinOp;
+    DCL-PI *N LIKE(ShortString);
+        p_node POINTER VALUE;
+    END-PI;
+
+    DCL-DS node LIKEDS(node_t) BASED(p_node);
+
+    SemanticAnalyzer_Visit(node.left);
+    SemanticAnalyzer_Visit(node.right);
+
+    RETURN '';
+
+END-PROC;
+
+
+
+DCL-PROC SemanticAnalyzer_Visit_VarDecl;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
     END-PI;
@@ -424,9 +347,17 @@ DCL-PROC SymbolTableBuilder_Visit_VarDecl;
 
     p_left = node.left;
     var_name = var_node.token.value;
-    p_var_symbol = VarSymbol_Init(var_name:type_name);
 
-    SymbolTable_Define(var_symbol);
+    p_var_symbol = %ALLOC(%SIZE(var_symbol));
+    var_symbol = SymbolTable_Lookup(var_name);
+    IF var_symbol.name = var_name;
+        DEALLOC p_var_symbol;
+        SemanticAnalyzer_Error('Duplicate identifier ' + var_name + ' found.');
+    ELSE;
+        DEALLOC p_var_symbol;
+        p_var_symbol = VarSymbol_Init(var_name:type_name);
+        SymbolTable_Insert(var_symbol);
+    ENDIF;
 
     RETURN '';
 
@@ -434,32 +365,24 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Visit_Assign;
+DCL-PROC SemanticAnalyzer_Visit_Assign;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
     END-PI;
 
-    DCL-DS Node       LIKEDS(Node_t) BASED(p_Node);
-    DCL-DS Node2      LIKEDS(Node_t) BASED(p_Node2);
-    DCL-DS var_symbol LIKEDS(Symbol_t);
+    DCL-DS Node LIKEDS(Node_t) BASED(p_Node);
 
-    DCL-S Var_Name LIKE(ShortString);
+    SemanticAnalyzer_Visit(Node.Right);
 
-    p_Node2 = Node.Left;
-    Var_Name = Node2.Token.Value;
+    SemanticAnalyzer_Visit(Node.Left);
 
-    var_symbol = SymbolTable_Lookup(var_name);
-    IF var_symbol.name <> var_name;
-        SymbolTableBuilder_Error('Name error: ' + Var_Name);
-    ENDIF;
-
-    RETURN SymbolTableBuilder_Visit(Node.Right);
+    RETURN '';
 
 END-PROC;
 
 
 
-DCL-PROC SymbolTableBuilder_Visit_Var;
+DCL-PROC SemanticAnalyzer_Visit_Var;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
     END-PI;
@@ -473,23 +396,11 @@ DCL-PROC SymbolTableBuilder_Visit_Var;
 
     var_symbol = SymbolTable_Lookup(var_name);
     IF var_symbol.name <> var_name;
-        SymbolTableBuilder_Error('Name error: ' + Var_Name);
+        SemanticAnalyzer_Error('Identifier not found: ' + Var_Name);
     ENDIF;
 
     RETURN '';
 
 END-PROC;
-
-
-
-DCL-PROC SymbolTableBuilder_Visit_ProcedureDecl;
-    DCL-PI *N LIKE(ShortString);
-        p_node POINTER VALUE;
-    END-PI;
-
-    RETURN '';
-
-END-PROC;
-
 
 

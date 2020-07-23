@@ -17,13 +17,10 @@ END-DS;
 
 
 
-DCL-PR SymbolTable_Init;
+DCL-PR SemanticAnalyzer_Init;
 END-PR;
 
-DCL-PR SymbolTable_Str LIKE(LongString);
-END-PR;
-
-DCL-PR SymbolTableBuilder_VISIT LIKE(ShortString);
+DCL-PR SemanticAnalyzer_Visit LIKE(ShortString);
     p_node POINTER VALUE;
 END-PR;
 
