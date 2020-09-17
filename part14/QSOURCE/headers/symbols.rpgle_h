@@ -1,0 +1,28 @@
+**FREE
+/IF NOT DEFINED(symbols_h)
+/DEFINE symbols_h
+
+
+DCL-DS Symbol_t QUALIFIED TEMPLATE;
+    name     LIKE(ShortString) INZ('');
+    category LIKE(ShortString) INZ('');
+    type     LIKE(ShortString) INZ('');
+END-DS;
+
+
+DCL-DS SymbolTable_t QUALIFIED TEMPLATE;
+    NumSymbols UNS(5) INZ(0);
+    Symbol     LIKEDS(Symbol_t) INZ(*LIKEDS) DIM(5000);
+END-DS;
+
+
+
+DCL-PR SemanticAnalyzer_Init;
+END-PR;
+
+DCL-PR SemanticAnalyzer_Visit LIKE(ShortString);
+    p_node POINTER VALUE;
+END-PR;
+
+
+/ENDIF
