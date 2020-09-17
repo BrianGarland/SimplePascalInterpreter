@@ -12,7 +12,14 @@ END-DS;
 
 DCL-DS SymbolTable_t QUALIFIED TEMPLATE;
     NumSymbols UNS(5) INZ(0);
-    Symbol     LIKEDS(Symbol_t) INZ(*LIKEDS) DIM(5000);
+    Symbol     LIKEDS(Symbol_t) INZ(*LIKEDS) DIM(500);
+END-DS;
+
+
+DCL-DS ScopedSymbolTable_t QUALIFIED TEMPLATE;
+    Symbols     LIKEDS(SymbolTable_t) INZ(*LIKEDS);
+    Scope_Name  LIKE(ShortString);
+    Scope_Level UNS(5);
 END-DS;
 
 

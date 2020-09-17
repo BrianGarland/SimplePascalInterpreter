@@ -11,7 +11,12 @@ CTL-OPT NOMAIN;
 
 DCL-DS NullSymbol  LIKEDS(Symbol_t);
 
-DCL-DS SymbolTable LIKEDS(SymbolTable_t) INZ(*LIKEDS) EXPORT;
+
+DCL-DS Scope     LIKEDS(ScopedSymbolTable_t) INZ(*LIKEDS) DIM(50) EXPORT;
+DCL-S  NumScopes UNS(5) INZ(0) EXPORT;
+
+
+DCL-S Current_Scope_ID UNS(5) INZ(0);
 
 
 
@@ -87,11 +92,28 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTable_Init;
+DCL-PROC ScopedSymbolTable_Init;
     DCL-PI *N;
+        Scope_Name  LIKE(ShortString) CONST;
+        Scope_Level UNS(5) CONST;
     END-PI;
 
-    RESET SymbolTable;
+    DCL-S i UNS(5) INZ(0);
+
+    IF NumScopes > 0;
+        i = %LOOKUP(Scope_Name:Scope(*).Scope_Name:1:NumScopes);
+    ENDIF;
+
+    IF i = 0;
+        NumScopes += 1;
+        i = NumScopes;
+    ENDIF;
+
+    RESET Scope(i).Symbols;
+    Scope(i).Scope_Name = Scope_Name;
+    Scope(i).Scope_Level = Scope_Level;
+
+    Current_Scope_ID = i;
 
     SymbolTable_Init_Builtins();
 
@@ -113,10 +135,10 @@ DCL-PROC SymbolTable_Init_Builtins;
     DCL-DS symbol LIKEDS(symbol_t) BASED(p_symbol);
 
     p_symbol = BuiltinTypeSymbol_Init('INTEGER');
-    SymbolTable_Insert(symbol);
+    ScopedSymbolTable_Insert(symbol);
 
     p_symbol = BuiltinTypeSymbol_Init('REAL');
-    SymbolTable_Insert(symbol);
+    ScopedSymbolTable_Insert(symbol);
 
     RETURN;
 
@@ -124,23 +146,24 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTable_Insert;
+DCL-PROC ScopedSymbolTable_Insert;
     DCL-PI *N;
         self LIKEDS(Symbol_t) VALUE;
     END-PI;
 
     DCL-S i UNS(5) INZ(0);
 
-    IF SymbolTable.NumSymbols > 0;
-        i = %LOOKUP(self.name:SymbolTable.Symbol(*).name:1:SymbolTable.NumSymbols);
+    IF Scope(Current_Scope_ID).Symbols.NumSymbols > 0;
+        i = %LOOKUP(self.name:Scope(Current_Scope_ID).Symbols.Symbol(*).name:
+                    1:Scope(Current_Scope_ID).Symbols.NumSymbols);
     ENDIF;
 
-    IF i > 0;
-        SymbolTable.Symbol(i) = self;
-    ELSE;
-        SymbolTable.NumSymbols += 1;
-        SymbolTable.Symbol(SymbolTable.NumSymbols) = self;
+    IF i =0;
+        Scope(Current_Scope_ID).Symbols.NumSymbols += 1;
+        i = Scope(Current_Scope_ID).Symbols.NumSymbols;
     ENDIF;
+
+    Scope(Current_Scope_ID).Symbols.Symbol(i) = self;
 
     RETURN;
 
@@ -148,17 +171,20 @@ END-PROC;
 
 
 
-DCL-PROC SymbolTable_Lookup;
+DCL-PROC ScopedSymbolTable_Lookup;
     DCL-PI *N LIKEDS(Symbol_t);
         name LIKE(Symbol_t.name);
     END-PI;
 
-    DCL-S i UNS(5);
+    DCL-S i UNS(5) INZ(0);
 
-    i = %LOOKUP(name:SymbolTable.Symbol(*).name:1:SymbolTable.NumSymbols);
+    IF Scope(Current_Scope_ID).Symbols.NumSymbols > 0;
+        i = %LOOKUP(name:Scope(Current_Scope_ID).Symbols.Symbol(*).name:
+                    1:Scope(Current_Scope_ID).Symbols.NumSymbols);
+    ENDIF;
 
     IF i > 0;
-        RETURN SymbolTable.Symbol(i);
+        RETURN Scope(Current_Scope_ID).Symbols.Symbol(i);
     ELSE;
         RETURN NullSymbol;
     ENDIF;
@@ -171,7 +197,7 @@ DCL-PROC SemanticAnalyzer_Init EXPORT;
     DCL-PI *N;
     END-PI;
 
-    SymbolTable_Init();
+    ScopedSymbolTable_Init('global':1);
 
     RETURN;
 
@@ -343,20 +369,20 @@ DCL-PROC SemanticAnalyzer_Visit_VarDecl;
 
     p_right = node.right;
     type_name = type_node.token.value;
-    type_symbol = SymbolTable_Lookup(type_name);
+    type_symbol = ScopedSymbolTable_Lookup(type_name);
 
     p_left = node.left;
     var_name = var_node.token.value;
 
     p_var_symbol = %ALLOC(%SIZE(var_symbol));
-    var_symbol = SymbolTable_Lookup(var_name);
+    var_symbol = ScopedSymbolTable_Lookup(var_name);
     IF var_symbol.name = var_name;
         DEALLOC p_var_symbol;
         SemanticAnalyzer_Error('Duplicate identifier ' + var_name + ' found.');
     ELSE;
         DEALLOC p_var_symbol;
         p_var_symbol = VarSymbol_Init(var_name:type_name);
-        SymbolTable_Insert(var_symbol);
+        ScopedSymbolTable_Insert(var_symbol);
     ENDIF;
 
     RETURN '';
@@ -394,7 +420,7 @@ DCL-PROC SemanticAnalyzer_Visit_Var;
 
     Var_Name = Node.Token.Value;
 
-    var_symbol = SymbolTable_Lookup(var_name);
+    var_symbol = ScopedSymbolTable_Lookup(var_name);
     IF var_symbol.name <> var_name;
         SemanticAnalyzer_Error('Identifier not found: ' + Var_Name);
     ENDIF;

@@ -8,6 +8,7 @@ SHELL=/QOpenSys/usr/bin/qsh
 #----------
 
 all: $(BIN_LIB).lib spifm.dspf spi.pgm spi.cmd
+	@echo "Built all"
 
 spi.pgm: spifm.dspf util.rpgle lexer.rpgle parser.rpgle symbols.rpgle interpret.rpgle spi.rpgle
 

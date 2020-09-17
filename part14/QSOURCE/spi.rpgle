@@ -17,7 +17,9 @@
      D  id                                 LIKE(ShortString)
      D  value                              LIKE(ShortString)
 
-     D SymbolTable     DS                  LIKEDS(SymbolTable_t) IMPORT
+     D Scope           DS                  LIKEDS(ScopedSymbolTable_t) DIM(50)
+     D                                     IMPORT
+     D NumScopes       S              5U 0 IMPORT
 
      D #EXIT           C                   x'33'                                F3
      D #RUN            C                   x'38'                                F8
@@ -302,6 +304,7 @@
 
      D i               S              5U 0
      D p_Tree          S               *
+     D s               S              5U 0
      D Text            S                   LIKE(LongString) INZ('')
      D Result          S                   LIKE(ShortString)
 
@@ -325,13 +328,30 @@
            History(HistoryLines) = '';
 
            HistoryLines += 1;
-           History(HistoryLines) = '  Symbol Table:';
-           FOR i = 1 TO SymbolTable.NumSymbols;
-               result = '  {"name":"' + SymbolTable.Symbol(i).name + '"'
-                      + ',"category":"' + SymbolTable.Symbol(i).category + '"'
-                      + ',"type":"' + SymbolTable.Symbol(i).type + '"}';
+           History(HistoryLines) = '  SCOPE (Scoped Symbol Table)';
+           HistoryLines += 1;
+           History(HistoryLines) = '  ===========================';
+           FOR s = 1 TO NumScopes;
                HistoryLines += 1;
-               History(HistoryLines) = '  ' + result;
+               History(HistoryLines) = '  Scope Name  : '
+                                     + Scope(s).Scope_Name;
+               HistoryLines += 1;
+               History(HistoryLines) = '  Scope Level : '
+                                     + %CHAR(Scope(s).Scope_Level);
+               HistoryLines += 1;
+               History(HistoryLines) = '  Scope (Scoped Symbol Table) Contents';
+               HistoryLines += 1;
+               History(HistoryLines) = '  ------------------------------------';
+               FOR i = 1 TO Scope(s).Symbols.NumSymbols;
+                   result = '{"name":"'
+                          + Scope(s).Symbols.Symbol(i).name + '"'
+                          + ',"category":"'
+                          + Scope(s).Symbols.Symbol(i).category + '"'
+                          + ',"type":"'
+                          + Scope(s).Symbols.Symbol(i).type + '"}';
+                   HistoryLines += 1;
+                   History(HistoryLines) = '  ' + result;
+               ENDFOR;
            ENDFOR;
 
            //lexer = Lexer_Init(text);
@@ -526,7 +546,7 @@
            History(HistoryLines) = '> SAVE "' + %TRIMR(FileName) + '"';
 
            FOR i = 1 TO ListingLines;
-               Buffer = %TRIMR(%SUBST(Listing(i).Statement:3)) + LF;
+               Buffer = %TRIMR(Listing(i).Statement) + LF;
                fPuts(Buffer:Stream);
            ENDFOR;
 
