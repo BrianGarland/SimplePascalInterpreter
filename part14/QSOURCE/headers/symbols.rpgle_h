@@ -2,11 +2,18 @@
 /IF NOT DEFINED(symbols_h)
 /DEFINE symbols_h
 
+/INCLUDE headers/util.rpgle_h
+/INCLUDE headers/lexer.rpgle_h
+/INCLUDE headers/parser.rpgle_h
+
+
+
 
 DCL-DS Symbol_t QUALIFIED TEMPLATE;
     name     LIKE(ShortString) INZ('');
     category LIKE(ShortString) INZ('');
     type     LIKE(ShortString) INZ('');
+    params   POINTER INZ(*NULL);
 END-DS;
 
 
@@ -17,9 +24,10 @@ END-DS;
 
 
 DCL-DS ScopedSymbolTable_t QUALIFIED TEMPLATE;
-    Symbols     LIKEDS(SymbolTable_t) INZ(*LIKEDS);
-    Scope_Name  LIKE(ShortString);
-    Scope_Level UNS(5);
+    Symbols         LIKEDS(SymbolTable_t) INZ(*LIKEDS);
+    Scope_Name      LIKE(ShortString);
+    Scope_Level     UNS(5);
+    Enclosing_Scope UNS(5);
 END-DS;
 
 

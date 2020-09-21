@@ -32,6 +32,7 @@ DCL-C NOOP          'NOOP';
 DCL-C BLOCK         'BLOCK';
 DCL-C TYPE          'TYPE';
 DCL-C VARDECL       'VARDECL';
+DCL-C PARAMDECL     'PARAM';
 DCL-C NONE          x'FF';
 
 

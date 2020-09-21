@@ -2,6 +2,10 @@
 /IF NOT DEFINED(parser_h)
 /DEFINE parser_h
 
+/INCLUDE headers/util.rpgle_h
+/INCLUDE headers/lexer.rpgle_h
+
+
 
 //--------------------------------------
 // Parser
@@ -10,10 +14,16 @@
 DCL-DS node_t QUALIFIED TEMPLATE;
     left POINTER;
     token LIKEDS(token_t) INZ(*LIKEDS);
+    params POINTER INZ(*NULL);
     right POINTER;
 END-DS;
 
 DCL-C MAX_STATEMENTS 5000;
+
+DCL-DS Params_t QUALIFIED TEMPLATE;
+    NumNodes UNS(5) INZ(0);
+    Nodes    POINTER DIM(10);
+END-DS;
 
 
 

@@ -20,6 +20,7 @@ DCL-S Current_Scope_ID UNS(5) INZ(0);
 
 
 
+
 DCL-PROC Symbol_Init;
     DCL-PI *N POINTER;
         name LIKE(ShortString) VALUE;
@@ -92,10 +93,39 @@ END-PROC;
 
 
 
+DCL-PROC ProcedureSymbol_Init;
+    DCL-PI *N POINTER;
+        name   LIKE(ShortString) VALUE;
+        type   LIKE(ShortString) VALUE OPTIONS(*NOPASS);
+        params POINTER OPTIONS(*NOPASS);
+    END-PI;
+
+    DCL-DS self LIKEDS(Symbol_t) BASED(p_self);
+
+    p_self = %ALLOC(%SIZE(Symbol_t));
+
+    self.name = name;
+    self.category = 'procedure';
+    IF %PARMS >= %PARMNUM(type) AND type <> '';
+        self.type = type;
+    ELSE;
+        self.type = 'none';
+    ENDIF;
+    IF %PARMS >= %PARMNUM(params);
+        self.params = params;
+    ENDIF;
+
+    RETURN p_self;
+
+END-PROC;
+
+
+
 DCL-PROC ScopedSymbolTable_Init;
     DCL-PI *N;
-        Scope_Name  LIKE(ShortString) CONST;
-        Scope_Level UNS(5) CONST;
+        Scope_Name      LIKE(ShortString) CONST;
+        Scope_Level     UNS(5) CONST;
+        Enclosing_Scope UNS(5) CONST;
     END-PI;
 
     DCL-S i UNS(5) INZ(0);
@@ -112,6 +142,7 @@ DCL-PROC ScopedSymbolTable_Init;
     RESET Scope(i).Symbols;
     Scope(i).Scope_Name = Scope_Name;
     Scope(i).Scope_Level = Scope_Level;
+    Scope(i).Enclosing_Scope = Enclosing_Scope;
 
     Current_Scope_ID = i;
 
@@ -173,20 +204,34 @@ END-PROC;
 
 DCL-PROC ScopedSymbolTable_Lookup;
     DCL-PI *N LIKEDS(Symbol_t);
-        name LIKE(Symbol_t.name);
+        name              LIKE(Symbol_t.name);
+        lookup_scope_parm UNS(5) OPTIONS(*NOPASS);
     END-PI;
 
-    DCL-S i UNS(5) INZ(0);
+    DCL-S i            UNS(5) INZ(0);
+    DCL-S lookup_scope UNS(5);
+    DCL-S search_tree  IND INZ(FALSE);
 
-    IF Scope(Current_Scope_ID).Symbols.NumSymbols > 0;
-        i = %LOOKUP(name:Scope(Current_Scope_ID).Symbols.Symbol(*).name:
-                    1:Scope(Current_Scope_ID).Symbols.NumSymbols);
+    IF %PARMS >= %PARMNUM(lookup_scope_parm);
+        lookup_scope = lookup_scope_parm;
+        search_tree = TRUE;
+    ELSE;
+        lookup_scope = Current_Scope_ID;
+    ENDIF;
+
+    IF Scope(lookup_scope).Symbols.NumSymbols > 0;
+        i = %LOOKUP(name:Scope(lookup_scope).Symbols.Symbol(*).name:
+                    1:Scope(lookup_scope).Symbols.NumSymbols);
     ENDIF;
 
     IF i > 0;
-        RETURN Scope(Current_Scope_ID).Symbols.Symbol(i);
+        RETURN Scope(lookup_scope).Symbols.Symbol(i);
     ELSE;
-        RETURN NullSymbol;
+        IF search_tree AND Scope(lookup_scope).Enclosing_Scope <> 0;
+            RETURN ScopedSymbolTable_Lookup(name:Scope(lookup_scope).Enclosing_Scope);
+        ELSE;
+            RETURN NullSymbol;
+        ENDIF;
     ENDIF;
 
 END-PROC;
@@ -197,7 +242,7 @@ DCL-PROC SemanticAnalyzer_Init EXPORT;
     DCL-PI *N;
     END-PI;
 
-    ScopedSymbolTable_Init('global':1);
+    ScopedSymbolTable_Init('global':1:0);
 
     RETURN;
 
@@ -247,6 +292,9 @@ DCL-PROC SemanticAnalyzer_Visit EXPORT;
         OR node.token.type = INTEGER_DIV
         OR node.token.type = FLOAT_DIV;
         RETURN SemanticAnalyzer_Visit_BinOp(p_Node);
+
+    WHEN node.token.type = PROCEDURE;
+        RETURN SemanticAnalyzer_Visit_ProcedureDecl(p_Node);
 
     WHEN node.token.type = VARDECL;
         RETURN SemanticAnalyzer_Visit_VarDecl(p_Node);
@@ -298,7 +346,21 @@ DCL-PROC SemanticAnalyzer_Visit_Program;
 
     DCL-DS node LIKEDS(node_t) BASED(p_node);
 
-    RETURN SemanticAnalyzer_Visit(Node.Right);
+    DCL-S global_scope UNS(5);
+    DCL-S return_value LIKE(ShortString);
+
+    global_scope = %LOOKUP('global':scope(*).Scope_Name);
+    IF global_scope = 0;
+        ScopedSymbolTable_Init('global':1:0);
+    ELSE;
+        Current_Scope_ID = global_scope;
+    ENDIF;
+
+    return_value = SemanticAnalyzer_Visit(Node.Right);
+
+    Current_Scope_ID = scope(current_Scope_ID).Enclosing_Scope;
+
+    RETURN return_value;
 
 END-PROC;
 
@@ -353,6 +415,60 @@ END-PROC;
 
 
 
+DCL-PROC SemanticAnalyzer_Visit_ProcedureDecl;
+    DCL-PI *N LIKE(ShortString);
+        p_node POINTER VALUE;
+    END-PI;
+
+    DCL-DS node        LIKEDS(node_t) BASED(p_node);
+    DCL-DS proc_symbol LIKEDS(symbol_t) BASED(p_proc_symbol);
+    DCL-DS params      LIKEDS(params_t) BASED(p_params);
+    DCL-DS ParamNode   LIKEDS(node_t) BASED(p_ParamNode);
+    DCL-DS VarNode     LIKEDS(node_t) BASED(p_VarNode);
+    DCL-DS TypeNode    LIKEDS(node_t) BASED(p_TypeNode);
+    DCL-DS ParamSymbol LIKEDS(symbol_t) BASED(p_ParamSymbol);
+
+    DCL-S i            UNS(5);
+    DCL-S proc_name    LIKE(ShortString);
+    DCL-S return_value LIKE(ShortString);
+
+    proc_name = node.token.value;
+
+    // Validate procedure name and add to current symbol table
+    p_proc_symbol = %ALLOC(%SIZE(proc_symbol));
+    proc_symbol = ScopedSymbolTable_Lookup(proc_name);
+    IF proc_symbol.name = proc_name;
+        DEALLOC p_proc_symbol;
+        SemanticAnalyzer_Error('Duplicate procedure ''' + proc_name + ''' found.');
+    ELSE;
+        DEALLOC p_proc_symbol;
+        p_proc_symbol = ProcedureSymbol_Init(proc_name:PROCEDURE:Node.params);
+        ScopedSymbolTable_Insert(proc_symbol);
+    ENDIF;
+
+    // Start new scope
+    ScopedSymbolTable_Init(proc_name:Scope(Current_Scope_ID).Scope_Level+1:Current_Scope_ID);
+
+    // Add parameters to symbol table
+    p_params = Node.params;
+    FOR i = 1 TO Params.NumNodes;
+        p_ParamNode = Params.Nodes(i);
+        p_VarNode = ParamNode.Left;
+        p_TypeNode = ParamNode.Right;
+        p_ParamSymbol = Symbol_Init(VarNode.token.value:TypeNode.token.value);
+        ScopedSymbolTable_Insert(ParamSymbol);
+    ENDFOR;
+
+    return_value = SemanticAnalyzer_Visit(Node.Right);
+
+    Current_Scope_ID = scope(current_Scope_ID).Enclosing_Scope;
+
+    RETURN return_value;
+
+END-PROC;
+
+
+
 DCL-PROC SemanticAnalyzer_Visit_VarDecl;
     DCL-PI *N LIKE(ShortString);
         p_node POINTER VALUE;
@@ -369,7 +485,7 @@ DCL-PROC SemanticAnalyzer_Visit_VarDecl;
 
     p_right = node.right;
     type_name = type_node.token.value;
-    type_symbol = ScopedSymbolTable_Lookup(type_name);
+    type_symbol = ScopedSymbolTable_Lookup(type_name:current_scope_id);
 
     p_left = node.left;
     var_name = var_node.token.value;
@@ -378,7 +494,7 @@ DCL-PROC SemanticAnalyzer_Visit_VarDecl;
     var_symbol = ScopedSymbolTable_Lookup(var_name);
     IF var_symbol.name = var_name;
         DEALLOC p_var_symbol;
-        SemanticAnalyzer_Error('Duplicate identifier ' + var_name + ' found.');
+        SemanticAnalyzer_Error('Duplicate identifier ''' + var_name + ''' found.');
     ELSE;
         DEALLOC p_var_symbol;
         p_var_symbol = VarSymbol_Init(var_name:type_name);
@@ -420,7 +536,7 @@ DCL-PROC SemanticAnalyzer_Visit_Var;
 
     Var_Name = Node.Token.Value;
 
-    var_symbol = ScopedSymbolTable_Lookup(var_name);
+    var_symbol = ScopedSymbolTable_Lookup(var_name:Current_Scope_ID);
     IF var_symbol.name <> var_name;
         SemanticAnalyzer_Error('Identifier not found: ' + Var_Name);
     ENDIF;

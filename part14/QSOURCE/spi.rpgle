@@ -302,6 +302,11 @@
      D lexer           DS                  LIKEDS(Lexer_t) INZ(*LIKEDS)
      D parser          DS                  LIKEDS(Parser_t) INZ(*LIKEDS)
 
+     D Params          DS                  LIKEDS(Params_t) BASED(p_Params)
+     D ParamNode       DS                  LIKEDS(node_t) BASED(p_ParamNode)
+     D VarNode         DS                  LIKEDS(node_t) BASED(p_VarNode)
+     D TypeNode        DS                  LIKEDS(node_t) BASED(p_TypeNode)
+
      D i               S              5U 0
      D p_Tree          S               *
      D s               S              5U 0
@@ -333,11 +338,21 @@
            History(HistoryLines) = '  ===========================';
            FOR s = 1 TO NumScopes;
                HistoryLines += 1;
-               History(HistoryLines) = '  Scope Name  : '
+               History(HistoryLines) = '';
+               HistoryLines += 1;
+               History(HistoryLines) = '  Scope Name      : '
                                      + Scope(s).Scope_Name;
                HistoryLines += 1;
-               History(HistoryLines) = '  Scope Level : '
+               History(HistoryLines) = '  Scope Level     : '
                                      + %CHAR(Scope(s).Scope_Level);
+               IF Scope(s).Enclosing_Scope = 0;
+                   HistoryLines += 1;
+                   History(HistoryLines) = '  Enclosing scope : none';
+               ELSE;
+                   HistoryLines += 1;
+                   History(HistoryLines) = '  Enclosing scope : '
+                           + %CHAR(Scope(Scope(s).Enclosing_Scope).Scope_Name);
+               ENDIF;
                HistoryLines += 1;
                History(HistoryLines) = '  Scope (Scoped Symbol Table) Contents';
                HistoryLines += 1;
@@ -348,7 +363,21 @@
                           + ',"category":"'
                           + Scope(s).Symbols.Symbol(i).category + '"'
                           + ',"type":"'
-                          + Scope(s).Symbols.Symbol(i).type + '"}';
+                          + Scope(s).Symbols.Symbol(i).type;
+                   IF Scope(s).Symbols.Symbol(i).type = PROCEDURE
+                       AND Scope(s).Symbols.Symbol(i).params <> *NULL;
+                       result += ',"parameters":[';
+                       p_Params = Scope(s).Symbols.Symbol(i).params;
+                       FOR j = 1 TO Params.NumNodes;
+                           p_ParamNode = Params.Nodes(j);
+                           p_VarNode = ParamNode.Left;
+                           p_TypeNode = ParamNode.Right;
+                           result += '{"' + VarNode.token.value + '","'
+                                   + TypeNode.token.value + '"}';
+                       ENDFOR;
+                       result += ']';
+                   ENDIF;
+                   result += '"}';
                    HistoryLines += 1;
                    History(HistoryLines) = '  ' + result;
                ENDFOR;

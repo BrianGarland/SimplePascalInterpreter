@@ -233,19 +233,41 @@ END-PROC;
 
 
 
+DCL-PROC Param_Init;
+    DCL-PI *N POINTER;
+        var_node  POINTER;
+        type_node POINTER;
+    END-PI;
+
+    DCL-DS self LIKEDS(Node_t) BASED(p_Node);
+
+    p_Node = %ALLOC(%SIZE(Node_t));
+
+    self.left = var_node;
+    self.token.type = PARAMDECL;
+    self.right = type_node;
+
+    RETURN p_Node;
+
+END-PROC;
+
+
+
 DCL-PROC ProcedureDecl_Init;
     DCL-PI *N POINTER;
         proc_name LIKE(shortString) VALUE;
+        params POINTER;
         block_node POINTER;
     END-PI;
 
-    DCL-DS self LIKEdS(Node_t) BASED(p_Node);
+    DCL-DS self LIKEDS(Node_t) BASED(p_Node);
 
     p_Node = %ALLOC(%SIZE(Node_t));
 
     self.left = *NULL;
     self.token.type = PROCEDURE;
     self.token.value = proc_name;
+    self.params = params;
     self.right = block_node;
 
     RETURN p_Node;
@@ -364,6 +386,7 @@ DCL-PROC Parser_Declarations;
     DCL-S Block_Node POINTER;
     DCL-S I UNS(10) INZ;
     DCL-S J UNS(10);
+    DCL-S Params POINTER;
     DCL-S proc_name LIKE(shortString);
 
     var_declarations2_p = %ALLOC(%SIZE(node_t) * MAX_STATEMENTS);
@@ -388,9 +411,17 @@ DCL-PROC Parser_Declarations;
             Parser_eat(self:PROCEDURE);
             proc_name = self.current_token.value;
             Parser_eat(self:ID);
+
+            params = *NULL;
+            IF self.current_token.type = LPAREN;
+                Parser_eat(self:LPAREN);
+                params = Parser_formal_parameter_list(self);
+                Parser_eat(self:RPAREN);
+            ENDIF;
+
             Parser_eat(self:SEMI);
             block_node = Parser_Block(self);
-            Proc_Declarations_p = ProcedureDecl_Init(proc_name:block_node);
+            Proc_Declarations_p = ProcedureDecl_Init(proc_name:params:block_node);
             i += 1;
             Var_Declarations2(i) = Proc_Declarations(1);
             Parser_eat(self:SEMI);
@@ -403,6 +434,87 @@ DCL-PROC Parser_Declarations;
     ENDDO;
 
     RETURN Var_Declarations2_p;
+
+END-PROC;
+
+
+
+DCL-PROC Parser_Formal_Parameters;
+    DCL-PI *N POINTER;
+        self LIKEDS(Parser_t);
+    END-PI;
+
+    DCL-DS params LIKEDS(params_t) BASED(p_params);
+
+    DCL-DS DebugNode LIKEDS(node_t) BASED(x);
+
+    DCL-S Param_Nodes POINTER DIM(MAX_STATEMENTS);
+    DCL-S I INT(10) INZ(1);
+    DCL-S J INT(10) INZ(0);
+    DCL-S Type_Node POINTER;
+
+    p_params = %ALLOC(%SIZE(params));
+
+    param_nodes(i) = Var_Init(self.current_token);
+    x = param_nodes(i);
+
+    Parser_eat(self:ID);
+
+    DOW self.current_token.type = COMMA;
+        Parser_eat(self:COMMA);
+        i += 1;
+        param_nodes(i) = Var_Init(self.current_token);
+        Parser_eat(self:ID);
+    ENDDO;
+
+    Parser_eat(self:COLON);
+
+    type_node = Parser_Type_Spec(self);
+
+    FOR j = 1 TO i;
+        params.Nodes(j) = Param_Init(param_nodes(j):Type_Node);
+    ENDFOR;
+    params.NumNodes = i;
+
+    RETURN p_params;
+
+END-PROC;
+
+
+
+DCL-PROC Parser_Formal_Parameter_List;
+    DCL-PI *N POINTER;
+        self LIKEDS(Parser_t);
+    END-PI;
+
+    DCL-DS params1 LIKEDS(params_t) BASED(p_params1);
+    DCL-DS params2 LIKEDS(params_t) BASED(p_params2);
+
+    DCL-S I UNS(5);
+
+    p_params2 = %ALLOC(%SIZE(params2));
+    params2.NumNodes = 0;
+
+    IF self.current_token.type <> ID;
+        RETURN p_params2;
+    ENDIF;
+
+    p_params1 = Parser_Formal_Parameters(self);
+    FOR i = 1 TO params1.NumNodes;
+        params2.NumNodes += 1;
+        params2.Nodes(params2.NumNodes) = params1.Nodes(i);
+    ENDFOR;
+
+    DOW self.current_token.type = SEMI;
+        Parser_eat(self:SEMI);
+        p_params1 = Parser_Formal_Parameters(self);
+        FOR i = 1 TO params1.NumNodes;
+            params2.NumNodes += 1;
+            params2.Nodes(params2.NumNodes) = params1.Nodes(i);
+        ENDFOR;
+    ENDDO;
+
+    RETURN p_params2;
 
 END-PROC;
 
