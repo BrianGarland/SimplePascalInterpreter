@@ -2,29 +2,33 @@
 /IF NOT DEFINED(lexer_h)
 /DEFINE lexer_h
 
-
-DCL-C INTEGER       'INTEGER';
-DCL-C REAL          'REAL';
-DCL-C INTEGER_CONST 'INTEGER_CONST';
-DCL-C REAL_CONST    'REAL_CONST';
-DCL-C PLUS          'PLUS';
-DCL-C MINUS         'MINUS';
-DCL-C MUL           'MUL';
-DCL-C INTEGER_DIV   'INTEGER_DIV';
-DCL-C FLOAT_DIV     'FLOAT_DIV';
+// Single-character token types
+DCL-C PLUS          '+';
+DCL-C MINUS         '-';
+DCL-C MUL           '*';
+DCL-C FLOAT_DIV     '/';
 DCL-C LPAREN        '(';
 DCL-C RPAREN        ')';
-DCL-C ID            'ID';
-DCL-C ASSIGN        'ASSIGN';
+DCL-C SEMI          ';';
+DCL-C DOT           '.';
+DCL-C COLON         ':';
+DCL-C COMMA         ',';
+
+// block of reserved keywords
+DCL-C PROGRAM       'PROGRAM';
+DCL-C INTEGER       'INTEGER';
+DCL-C REAL          'REAL';
+DCL-C INTEGER_DIV   'DIV';
+DCL-C VAR           'VAR';
+DCL-C PROCEDURE     'PROCEDURE';
 DCL-C BEGIN         'BEGIN';
 DCL-C END           'END';
-DCL-C SEMI          'SEMI';
-DCL-C DOT           'DOT';
-DCL-C PROGRAM       'PROGRAM';
-DCL-C VAR           'VAR';
-DCL-C COLON         'COLON';
-DCL-C COMMA         'COMMA';
-DCL-C PROCEDURE     'PROCEDURE';
+
+// Misc
+DCL-C ID            'ID';
+DCL-C INTEGER_CONST 'INTEGER_CONST';
+DCL-C REAL_CONST    'REAL_CONST';
+DCL-C ASSIGN        ':=';
 DCL-C EOF           'EOF';
 
 DCL-C CHILDREN      'CHILDREN';
@@ -50,15 +54,15 @@ END-DS;
 DCL-DS Token_t QUALIFIED TEMPLATE;
     type   LIKE(ShortString) INZ('');
     value  LIKE(ShortString) INZ('');
+    lineno UNS(5) INZ(0);
+    column UNS(5) INZ(0);
 END-DS;
 
 DCL-PR Token_Init LIKEDS(Token_t);
     type LIKE(ShortString) VALUE;
     value LIKE(ShortString) VALUE;
-END-PR;
-
-DCL-PR Token_Error LIKE(ShortString);
-    self LIKEDS(Token_t);
+    lineno UNS(5) VALUE OPTIONS(*NOPASS);
+    column UNS(5) VALUE OPTIONS(*NOPASS);
 END-PR;
 
 
@@ -71,6 +75,8 @@ DCL-DS Lexer_t QUALIFIED TEMPLATE;
     text          LIKE(LongString) INZ('');
     pos           UNS(10) INZ(1);
     current_char  CHAR(1) INZ('');
+    lineno        UNS(5) INZ(1);
+    column        UNS(5) INZ(1);
 END-DS;
 
 DCL-PR Lexer_Init LIKEDS(Lexer_t);

@@ -14,15 +14,17 @@ spi.pgm: spifm.dspf util.rpgle lexer.rpgle parser.rpgle symbols.rpgle interpret.
 
 util.rpgle: headers/util.rpgle_h
 
-lexer.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h
+error.rpgle: headers/util.rpgle_h headers/error.rpgle_h
 
-parser.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h
+lexer.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h
 
-symbols.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/symbols.rpgle_h
+parser.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h
 
-interpret.rpgle: headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
+symbols.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/symbols.rpgle_h
 
-spi.rpgle: spifm.dspf headers/stdio.rpgle_h headers/util.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/symbols.rpgle_h headers/interpret.rpgle_h
+interpret.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
+
+spi.rpgle: spifm.dspf headers/stdio.rpgle_h headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/symbols.rpgle_h headers/interpret.rpgle_h
 
 #----------
 

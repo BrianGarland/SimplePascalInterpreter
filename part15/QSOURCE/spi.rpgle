@@ -34,10 +34,6 @@
 
      D Offset          C                   2
 
-     D NULL            C                   x'00'
-     D CR              C                   x'0D'
-     D LF              C                   x'25'
-
      D DSPFDS          DS
      D  FKey                          1A   OVERLAY(DSPFDS:369)
 
@@ -319,7 +315,7 @@
        History(HistoryLines) = '> RUN';
 
        FOR i = 1 TO ListingLines;
-           Text += %TRIMR(Listing(i).Statement) + CR + LF;
+           Text += %TRIMR(Listing(i).Statement) + LF;
        ENDFOR;
 
        MONITOR;
@@ -411,7 +407,7 @@
            History(HistoryLines) = '  An error occured:';
 
            QMHRCVPM(RCVM0100DS:%SIZE(RCVM0100DS):'RCVM0100':'*':0:'*ESCAPE':
-                    '':0:'*SAME':ErrorCode);
+                    '':0:'*SAME':APIError);
            HistoryLines += 1;
            History(HistoryLines) = '  ' + %SUBST(RCVM0100DS.MsgData:1:
                                                  RCVM0100DS.LenDataRet);

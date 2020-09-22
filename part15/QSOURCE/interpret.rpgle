@@ -39,7 +39,7 @@ DCL-PROC Interpreter_Error;
     MsgDta = 'INTERPRETER: ' + MsgDta;
 
     qmhsndpm('CPF9897':'QCPFMSG   *LIBL':MsgDta:%LEN(MsgDta):
-             '*ESCAPE':'*':1:MsgKey:ErrorCode);
+             '*ESCAPE':'*':1:MsgKey:APIError);
 
 END-PROC;
 

@@ -1,0 +1,27 @@
+**FREE
+
+DCL-C UNEXPECTED_TOKEN 'Unexpected token';
+DCL-C ID_NOT_FOUND     'Identifier not found';
+DCL-C DUPLICATE_ID     'Duplicate id found';
+DCL-C VISIT_NOT_FOUND  'No visit procedure found';
+
+
+DCL-DS Error_t QUALIFIED TEMPLATE;
+    error_code LIKE(ShortString);
+    token      LIKE(ShortString);
+    message    LIKE(ShortString);
+END-DS;
+ 
+ 
+ 
+//--------------------------------------
+// Error 
+//--------------------------------------
+ 
+DCL-PR Error_Init LIKEDS(Error_t);
+    error_code LIKE(ShortString) VALUE;
+    token      LIKE(ShortString) VALUE;
+    message    LIKE(ShortString) VALUE;
+END-PR;
+ 
+ 

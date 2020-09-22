@@ -3,6 +3,7 @@
 CTL-OPT NOMAIN;
 
 /INCLUDE headers/util.rpgle_h
+/INCLUDE headers/error.rpgle_h
 /INCLUDE headers/lexer.rpgle_h
 /INCLUDE headers/parser.rpgle_h
 
@@ -294,17 +295,18 @@ END-PROC;
 
 DCL-PROC Parser_Error;
     DCL-PI *N;
-        self LIKEDS(Parser_t);
+        error_code LIKE(ShortString) CONST;
+        self       LIKEDS(Parser_t);
     END-PI;
 
-    DCL-S MsgKey CHAR(4);
     DCL-S MsgDta VARCHAR(100);
+    DCL-S MsgKey CHAR(4);
 
-    MsgDta = 'PARSER: Invalid syntax: ' + self.current_token.type
+    MsgDta = 'PARSER: ' + error_code + ': ' + self.current_token.type
            + ' ' + self.current_token.value;
 
     qmhsndpm('CPF9897':'QCPFMSG   *LIBL':MsgDta:%LEN(MsgDta):
-             '*ESCAPE':'*':1:MsgKey:ErrorCode);
+             '*ESCAPE':'*':1:MsgKey:APIError);
 
 END-PROC;
 
@@ -319,7 +321,7 @@ DCL-PROC Parser_Eat;
     IF self.current_token.type = token_type;
         self.current_token = Lexer_Get_Next_Token(self.lexer);
     ELSE;
-        Parser_Error(self);
+        Parser_Error(UNEXPECTED_TOKEN:self);
     ENDIF;
 
     RETURN;
@@ -377,23 +379,21 @@ DCL-PROC Parser_Declarations;
     END-PI;
 
     DCL-DS Proc_Declarations LIKEDS(node_t) DIM(MAX_STATEMENTS)
-                            BASED(Proc_Declarations_p);
+                             BASED(Proc_Declarations_p);
     DCL-DS Var_Declarations LIKEDS(node_t) DIM(MAX_STATEMENTS)
                             BASED(Var_Declarations_p);
     DCL-DS Var_Declarations2 LIKEDS(node_t) DIM(MAX_STATEMENTS)
                              BASED(Var_Declarations2_p);
 
-    DCL-S Block_Node POINTER;
     DCL-S I UNS(10) INZ;
     DCL-S J UNS(10);
-    DCL-S Params POINTER;
-    DCL-S proc_name LIKE(shortString);
 
     var_declarations2_p = %ALLOC(%SIZE(node_t) * MAX_STATEMENTS);
 
     DOW TRUE;
         SELECT;
         WHEN self.current_token.type = VAR;
+
             Parser_Eat(self:VAR);
             DOW self.current_token.type = ID;
                 var_declarations_p = Parser_Variable_Declaration(self);
@@ -408,23 +408,15 @@ DCL-PROC Parser_Declarations;
             ENDDO;
 
         WHEN self.current_token.type = PROCEDURE;
-            Parser_eat(self:PROCEDURE);
-            proc_name = self.current_token.value;
-            Parser_eat(self:ID);
 
-            params = *NULL;
-            IF self.current_token.type = LPAREN;
-                Parser_eat(self:LPAREN);
-                params = Parser_formal_parameter_list(self);
-                Parser_eat(self:RPAREN);
-            ENDIF;
-
-            Parser_eat(self:SEMI);
-            block_node = Parser_Block(self);
-            Proc_Declarations_p = ProcedureDecl_Init(proc_name:params:block_node);
-            i += 1;
-            Var_Declarations2(i) = Proc_Declarations(1);
-            Parser_eat(self:SEMI);
+            Proc_Declarations_p = Parser_Procedure_Declarations(self);
+            FOR j = 1 TO MAX_STATEMENTS;
+                IF Proc_Declarations(j).Token.Type = *BLANKS;
+                    LEAVE;
+                ENDIF;
+                i += 1;
+                Var_Declarations2(i) = Proc_Declarations(j);
+            ENDFOR;
 
         OTHER;
             LEAVE;
@@ -439,14 +431,47 @@ END-PROC;
 
 
 
+DCL-PROC Parser_Procedure_Declarations;
+    DCL-PI *N POINTER;
+        self LIKEDS(Parser_t);
+    END-PI;
+
+    DCL-DS Proc_Declarations LIKEDS(node_t) DIM(MAX_STATEMENTS)
+                             BASED(Proc_Declarations_p);
+
+    DCL-S Block_Node POINTER;
+    DCL-S I UNS(10) INZ;
+    DCL-S Params POINTER;
+    DCL-S proc_name LIKE(shortString);
+
+    Parser_eat(self:PROCEDURE);
+    proc_name = self.current_token.value;
+    Parser_eat(self:ID);
+
+    params = *NULL;
+    IF self.current_token.type = LPAREN;
+        Parser_eat(self:LPAREN);
+        params = Parser_formal_parameter_list(self);
+        Parser_eat(self:RPAREN);
+    ENDIF;
+
+    Parser_eat(self:SEMI);
+    block_node = Parser_Block(self);
+    Proc_Declarations_p = ProcedureDecl_Init(proc_name:params:block_node);
+    Parser_eat(self:SEMI);
+
+    RETURN Proc_Declarations_p;
+
+END-PROC;
+
+
+
 DCL-PROC Parser_Formal_Parameters;
     DCL-PI *N POINTER;
         self LIKEDS(Parser_t);
     END-PI;
 
     DCL-DS params LIKEDS(params_t) BASED(p_params);
-
-    DCL-DS DebugNode LIKEDS(node_t) BASED(x);
 
     DCL-S Param_Nodes POINTER DIM(MAX_STATEMENTS);
     DCL-S I INT(10) INZ(1);
@@ -456,7 +481,6 @@ DCL-PROC Parser_Formal_Parameters;
     p_params = %ALLOC(%SIZE(params));
 
     param_nodes(i) = Var_Init(self.current_token);
-    x = param_nodes(i);
 
     Parser_eat(self:ID);
 
@@ -635,10 +659,6 @@ DCL-PROC Parser_Statement_List;
         i += 1;
         Results(i) = Parser_Statement(Self);
     ENDDO;
-
-    IF self.current_token.type = ID;
-        Parser_Error(self);
-    ENDIF;
 
     RETURN Results;
 
@@ -838,7 +858,7 @@ DCL-PROC Parser_Parse EXPORT;
     Node = Parser_Program(self);
 
     IF self.current_token.type <> EOF;
-        Parser_Error(self);
+        Parser_Error(UNEXPECTED_TOKEN:self);
     ENDIF;
 
     RETURN Node;

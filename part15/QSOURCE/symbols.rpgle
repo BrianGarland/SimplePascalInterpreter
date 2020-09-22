@@ -3,6 +3,7 @@
 CTL-OPT NOMAIN;
 
 /INCLUDE headers/util.rpgle_h
+/INCLUDE headers/error.rpgle_h
 /INCLUDE headers/lexer.rpgle_h
 /INCLUDE headers/parser.rpgle_h
 /INCLUDE headers/symbols.rpgle_h
@@ -252,15 +253,20 @@ END-PROC;
 
 DCL-PROC SemanticAnalyzer_Error;
     DCL-PI *N;
-        MsgDta VARCHAR(100) VALUE;
+        error_code LIKE(ShortString) CONST;
+        token      LIKEDS(Token_t);
     END-PI;
 
+    DCL-S MsgDta VARCHAR(100);
     DCL-S MsgKey CHAR(4);
 
-    MsgDta = 'SYMBOLS: ' + MsgDta;
+    MsgDta = 'SYMBOLS: ' + error_code + ': ''' + token.type
+           + ''':''' + token.value
+           + ''' line: ' + %CHAR(token.lineno)
+           + ' column: ' + %CHAR(token.column);
 
     qmhsndpm('CPF9897':'QCPFMSG   *LIBL':MsgDta:%LEN(MsgDta):
-             '*ESCAPE':'*':1:MsgKey:ErrorCode);
+             '*ESCAPE':'*':1:MsgKey:APIError);
 
 END-PROC;
 
@@ -286,6 +292,16 @@ DCL-PROC SemanticAnalyzer_Visit EXPORT;
     WHEN node.token.type = NOOP;
         RETURN SemanticAnalyzer_Visit_NoOp(p_Node);
 
+    WHEN node.token.type = INTEGER_CONST;
+        RETURN SemanticAnalyzer_Visit_Num(p_Node);
+
+    WHEN node.token.type = REAL_CONST;
+        RETURN SemanticAnalyzer_Visit_Num(p_Node);
+
+    WHEN (node.token.type = PLUS OR node.token.type = MINUS)
+        AND node.left = *NULL;
+        RETURN SemanticAnalyzer_Visit_UnaryOp(p_Node);
+
     WHEN node.token.type = PLUS
         OR node.token.type = MINUS
         OR node.token.type = MUL
@@ -306,7 +322,7 @@ DCL-PROC SemanticAnalyzer_Visit EXPORT;
         RETURN SemanticAnalyzer_Visit_Var(p_Node);
 
     OTHER;
-        SemanticAnalyzer_Error('No visit defined for ' + node.token.type);
+        SemanticAnalyzer_Error(VISIT_NOT_FOUND:node.token);
 
     ENDSL;
 
@@ -439,7 +455,7 @@ DCL-PROC SemanticAnalyzer_Visit_ProcedureDecl;
     proc_symbol = ScopedSymbolTable_Lookup(proc_name);
     IF proc_symbol.name = proc_name;
         DEALLOC p_proc_symbol;
-        SemanticAnalyzer_Error('Duplicate procedure ''' + proc_name + ''' found.');
+        SemanticAnalyzer_Error(DUPLICATE_ID:Node.Token);
     ELSE;
         DEALLOC p_proc_symbol;
         p_proc_symbol = ProcedureSymbol_Init(proc_name:PROCEDURE:Node.params);
@@ -494,7 +510,7 @@ DCL-PROC SemanticAnalyzer_Visit_VarDecl;
     var_symbol = ScopedSymbolTable_Lookup(var_name);
     IF var_symbol.name = var_name;
         DEALLOC p_var_symbol;
-        SemanticAnalyzer_Error('Duplicate identifier ''' + var_name + ''' found.');
+        SemanticAnalyzer_Error(DUPLICATE_ID:var_node.token);
     ELSE;
         DEALLOC p_var_symbol;
         p_var_symbol = VarSymbol_Init(var_name:type_name);
@@ -538,11 +554,32 @@ DCL-PROC SemanticAnalyzer_Visit_Var;
 
     var_symbol = ScopedSymbolTable_Lookup(var_name:Current_Scope_ID);
     IF var_symbol.name <> var_name;
-        SemanticAnalyzer_Error('Identifier not found: ' + Var_Name);
+        SemanticAnalyzer_Error(ID_NOT_FOUND:Node.Token);
     ENDIF;
 
     RETURN '';
 
 END-PROC;
 
+
+
+DCL-PROC SemanticAnalyzer_Visit_Num;
+    DCL-PI *N LIKE(ShortString);
+        p_node POINTER VALUE;
+    END-PI;
+
+    RETURN '';
+
+END-PROC;
+
+
+
+DCL-PROC SemanticAnalyzer_Visit_UnaryOp;
+    DCL-PI *N LIKE(ShortString);
+        p_node POINTER VALUE;
+    END-PI;
+
+    RETURN '';
+
+END-PROC;
 

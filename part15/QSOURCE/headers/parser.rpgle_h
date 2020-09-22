@@ -44,6 +44,7 @@ DCL-PR Parser_Init LIKEDS(Parser_t);
 END-PR;
 
 DCL-PR Parser_Error;
+    error_code LIKE(ShortString) CONST;
     self LIKEDS(Parser_t);
 END-PR;
 

@@ -5,7 +5,12 @@
 
 DCL-C FALSE  '0';
 DCL-C TRUE   '1';
- 
+
+DCL-C NULL    x'00';
+DCL-C CR      x'0D';
+DCL-C LF      x'25';
+
+  
 
 DCL-PR QMHSNDPM EXTPGM('QMHSNDPM');
     MessageID  CHAR(7) CONST;
@@ -34,7 +39,7 @@ DCL-PR QMHRCVPM EXTPGM('QMHRCVPM');
 END-PR;
 
 
-DCL-DS ErrorCode QUALIFIED;
+DCL-DS APIError QUALIFIED;
     BytesProv  INT(10);
     BytesAvail INT(10);
 END-DS;
