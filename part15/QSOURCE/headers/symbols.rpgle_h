@@ -1,0 +1,43 @@
+**FREE
+/IF NOT DEFINED(symbols_h)
+/DEFINE symbols_h
+
+/INCLUDE headers/util.rpgle_h
+/INCLUDE headers/lexer.rpgle_h
+/INCLUDE headers/parser.rpgle_h
+
+
+
+
+DCL-DS Symbol_t QUALIFIED TEMPLATE;
+    name     LIKE(ShortString) INZ('');
+    category LIKE(ShortString) INZ('');
+    type     LIKE(ShortString) INZ('');
+    params   POINTER INZ(*NULL);
+END-DS;
+
+
+DCL-DS SymbolTable_t QUALIFIED TEMPLATE;
+    NumSymbols UNS(5) INZ(0);
+    Symbol     LIKEDS(Symbol_t) INZ(*LIKEDS) DIM(500);
+END-DS;
+
+
+DCL-DS ScopedSymbolTable_t QUALIFIED TEMPLATE;
+    Symbols         LIKEDS(SymbolTable_t) INZ(*LIKEDS);
+    Scope_Name      LIKE(ShortString);
+    Scope_Level     UNS(5);
+    Enclosing_Scope UNS(5);
+END-DS;
+
+
+
+DCL-PR SemanticAnalyzer_Init;
+END-PR;
+
+DCL-PR SemanticAnalyzer_Visit LIKE(ShortString);
+    p_node POINTER VALUE;
+END-PR;
+
+
+/ENDIF

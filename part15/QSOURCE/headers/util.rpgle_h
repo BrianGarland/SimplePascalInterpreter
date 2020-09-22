@@ -1,0 +1,78 @@
+**FREE
+/IF NOT DEFINED(util_h)
+/DEFINE util_h
+
+
+DCL-C FALSE  '0';
+DCL-C TRUE   '1';
+ 
+
+DCL-PR QMHSNDPM EXTPGM('QMHSNDPM');
+    MessageID  CHAR(7) CONST;
+    QualMsgF   CHAR(20) CONST;
+    MsgData    CHAR(32767) CONST OPTIONS(*VARSIZE);
+    MsgDtaLen  INT(10) CONST;
+    MsgType    CHAR(10) CONST;
+    CallStkEnt CHAR(10) CONST;
+    CallStkCnt INT(10) CONST;
+    MessageKey CHAR(4);
+    ErrorCode  CHAR(8192) OPTIONS(*VARSIZE);
+END-PR;
+
+
+DCL-PR QMHRCVPM EXTPGM('QMHRCVPM');
+    MsgInfo    CHAR(32767) OPTIONS(*VARSIZE);
+    MsgInfLen  INT(10) CONST;
+    Format     CHAR(8) CONST;
+    CallStkEnt CHAR(10) CONST;
+    CallStkCnt INT(10) CONST;
+    MsgType    CHAR(10) CONST;
+    MessageKey CHAR(4) CONST;
+    WaitTime   INT(10) CONST;
+    MsgAction  CHAR(10) CONST;
+    ErrorCode  CHAR(8192) OPTIONS(*VARSIZE);
+END-PR;
+
+
+DCL-DS ErrorCode QUALIFIED;
+    BytesProv  INT(10);
+    BytesAvail INT(10);
+END-DS;
+
+
+DCL-DS RCVM0100DS QUALIFIED;
+    BytesReturned INT(10);
+    BytesAvailable INT(10) INZ(%SIZE(RCVM0100DS));
+    MsgSeverity INT(10);
+    MsgID       CHAR(7);
+    MsgType     CHAR(2);
+    MsgKey      CHAR(4);
+    Reserved    CHAR(7);
+    CCSID1      INT(10);
+    CCSID2      INT(10);
+    LenDataRet  INT(10);
+    LenDataAvl  INT(10) INZ(%SIZE(RCVM0100DS.MsgData));
+    MsgData     CHAR(512);
+END-DS;
+
+
+DCL-S ShortString VARCHAR(100);
+DCL-S LongString VARCHAR(100000);
+
+DCL-PR isAlpha IND;
+    Test_Char CHAR(1);
+END-PR;
+
+DCL-PR isAlNum IND;
+    Test_Char CHAR(1);
+END-PR;
+
+DCL-PR isDigit IND;
+    Test_Char CHAR(1);
+END-PR;
+
+DCL-PR isSpace IND;
+    Test_Char CHAR(1);
+END-PR;
+
+/ENDIF

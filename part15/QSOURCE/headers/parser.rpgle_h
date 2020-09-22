@@ -1,0 +1,71 @@
+**FREE
+/IF NOT DEFINED(parser_h)
+/DEFINE parser_h
+
+/INCLUDE headers/util.rpgle_h
+/INCLUDE headers/lexer.rpgle_h
+
+
+
+//--------------------------------------
+// Parser
+//--------------------------------------
+
+DCL-DS node_t QUALIFIED TEMPLATE;
+    left POINTER;
+    token LIKEDS(token_t) INZ(*LIKEDS);
+    params POINTER INZ(*NULL);
+    right POINTER;
+END-DS;
+
+DCL-C MAX_STATEMENTS 5000;
+
+DCL-DS Params_t QUALIFIED TEMPLATE;
+    NumNodes UNS(5) INZ(0);
+    Nodes    POINTER DIM(10);
+END-DS;
+
+
+
+DCL-DS Child_t QUALIFIED TEMPLATE;
+    NumChildren UNS(10);
+    Children LIKEDS(node_t) INZ(*LIKEDS) DIM(MAX_STATEMENTS);
+END-DS;
+
+DCL-DS Parser_t QUALIFIED TEMPLATE;
+    lexer LIKEDS(Lexer_t) INZ(*LIKEDS);
+    current_token LIKEDS(Token_t) INZ(*LIKEDS);
+END-DS;
+
+
+
+DCL-PR Parser_Init LIKEDS(Parser_t);
+    lexer LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Parser_Error;
+    self LIKEDS(Parser_t);
+END-PR;
+
+DCL-PR Parser_Eat;
+    self LIKEDS(Parser_t);
+    token_type LIKE(ShortString) VALUE;
+END-PR;
+
+DCL-PR Parser_Factor POINTER;
+    self LIKEDS(Parser_t);
+END-PR;
+
+DCL-PR Parser_Term POINTER;
+    self LIKEDS(Parser_t);
+END-PR;
+
+DCL-PR Parser_Expr POINTER;
+    self LIKEDS(Parser_t);
+END-PR;
+
+DCL-PR Parser_Parse POINTER;
+    self LIKEDS(Parser_t);
+END-PR;
+
+/ENDIF
