@@ -53,48 +53,48 @@ DCL-PROC Interpreter_Visit;
     DCL-DS node LIKEDS(node_t) BASED(p_node);
 
     SELECT;
-    WHEN node.token.type = PROGRAM;
+    WHEN node.token.type = TokenTypeID('PROGRAM');
         RETURN Interpreter_Visit_Program(p_Node);
 
-    WHEN node.token.type = BLOCK;
+    WHEN node.token.type = TokenTypeID('BLOCK');
         RETURN Interpreter_Visit_Block(p_Node);
 
-    WHEN node.token.type = VARDECL;
+    WHEN node.token.type = TokenTypeID('VARDECL');
         RETURN Interpreter_Visit_VarDecl(p_Node);
 
-    WHEN node.token.type = TYPE;
+    WHEN node.token.type = TokenTypeID('TYPE');
         RETURN Interpreter_Visit_Type(p_Node);
 
-    WHEN node.token.type = NOOP;
+    WHEN node.token.type = TokenTypeID('NOOP');
         RETURN Interpreter_Visit_NoOp(p_Node);
 
-    WHEN node.token.type = INTEGER_CONST;
+    WHEN node.token.type = TokenTypeID('INTEGER_CONST');
         RETURN Interpreter_Visit_Num(p_Node);
 
-    WHEN node.token.type = REAL_CONST;
+    WHEN node.token.type = TokenTypeID('REAL_CONST');
         RETURN Interpreter_Visit_Num(p_Node);
 
-    WHEN (node.token.type = PLUS OR node.token.type = MINUS)
+    WHEN (node.token.type = TokenTypeID('PLUS') OR node.token.type = TokenTypeID('MINUS'))
         AND node.left = *NULL;
         RETURN Interpreter_Visit_UnaryOp(p_Node);
 
-    WHEN node.token.type = CHILDREN;
+    WHEN node.token.type = TokenTypeID('CHILDREN');
         RETURN Interpreter_Visit_Compound(p_Node);
 
-    WHEN node.token.type = ASSIGN;
+    WHEN node.token.type = TokenTypeID('ASSIGN');
         RETURN Interpreter_Visit_Assign(p_Node);
 
-    WHEN node.token.type = ID;
+    WHEN node.token.type = TokenTypeID('ID');
         RETURN Interpreter_Visit_Var(p_Node);
 
-    WHEN node.token.type = PROCEDURE;
+    WHEN node.token.type = TokenTypeID('PROCEDURE');
         RETURN Interpreter_Visit_ProcedureDecl(p_Node);
 
-    WHEN node.token.type = PLUS
-        OR node.token.type = MINUS
-        OR node.token.type = MUL
-        OR node.token.type = INTEGER_DIV
-        OR node.token.type = FLOAT_DIV;
+    WHEN node.token.type = TokenTypeID('PLUS')
+        OR node.token.type = TokenTypeID('MINUS')
+        OR node.token.type = TokenTypeID('MUL')
+        OR node.token.type = TokenTypeID('INTEGER_DIV')
+        OR node.token.type = TokenTypeID('FLOAT_DIV');
         RETURN Interpreter_Visit_BinOp(p_Node);
 
     OTHER;
@@ -185,15 +185,15 @@ DCL-PROC Interpreter_Visit_BinOp;
     Right = %FLOAT(Interpreter_Visit(node.right));
 
     SELECT;
-    WHEN node.token.type = PLUS;
+    WHEN node.token.type = TokenTypeID('PLUS');
         EVAL Result = Left + Right;
-    WHEN node.token.type = MINUS;
+    WHEN node.token.type = TokenTypeID('MINUS');
         EVAL Result = Left - Right;
-    WHEN node.token.type = MUL;
+    WHEN node.token.type = TokenTypeID('MUL');
         EVAL Result = Left * Right;
-    WHEN node.token.type = INTEGER_DIV;
+    WHEN node.token.type = TokenTypeID('INTEGER_DIV');
         EVAL Result = %INT(Left / Right);
-    WHEN node.token.type = FLOAT_DIV;
+    WHEN node.token.type = TokenTypeID('FLOAT_DIV');
         EVAL Result = Left / Right;
     ENDSL;
 
@@ -231,9 +231,9 @@ DCL-PROC Interpreter_Visit_UnaryOp;
     Right = %INT(%FLOAT(Temp));
 
     SELECT;
-    WHEN node.token.type = PLUS;
+    WHEN node.token.type = TokenTypeID('PLUS');
         Result = Right;
-    WHEN node.token.type = MINUS;
+    WHEN node.token.type = TokenTypeID('MINUS');
         Result = -Right;
     ENDSL;
 

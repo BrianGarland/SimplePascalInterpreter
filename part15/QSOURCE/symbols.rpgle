@@ -280,45 +280,45 @@ DCL-PROC SemanticAnalyzer_Visit EXPORT;
     DCL-DS node LIKEDS(node_t) BASED(p_node);
 
     SELECT;
-    WHEN node.token.type = BLOCK;
+    WHEN node.token.type = TokenTypeID('BLOCK');
         RETURN SemanticAnalyzer_Visit_Block(p_Node);
 
-    WHEN node.token.type = PROGRAM;
+    WHEN node.token.type = TokenTypeID('PROGRAM');
         RETURN SemanticAnalyzer_Visit_Program(p_Node);
 
-    WHEN node.token.type = CHILDREN;
+    WHEN node.token.type = TokenTypeID('CHILDREN');
         RETURN SemanticAnalyzer_Visit_Compound(p_Node);
 
-    WHEN node.token.type = NOOP;
+    WHEN node.token.type = TokenTypeID('NOOP');
         RETURN SemanticAnalyzer_Visit_NoOp(p_Node);
 
-    WHEN node.token.type = INTEGER_CONST;
+    WHEN node.token.type = TokenTypeID('INTEGER_CONST');
         RETURN SemanticAnalyzer_Visit_Num(p_Node);
 
-    WHEN node.token.type = REAL_CONST;
+    WHEN node.token.type = TokenTypeID('REAL_CONST');
         RETURN SemanticAnalyzer_Visit_Num(p_Node);
 
-    WHEN (node.token.type = PLUS OR node.token.type = MINUS)
+    WHEN (node.token.type = TokenTypeID('PLUS') OR node.token.type = TokenTypeID('MINUS'))
         AND node.left = *NULL;
         RETURN SemanticAnalyzer_Visit_UnaryOp(p_Node);
 
-    WHEN node.token.type = PLUS
-        OR node.token.type = MINUS
-        OR node.token.type = MUL
-        OR node.token.type = INTEGER_DIV
-        OR node.token.type = FLOAT_DIV;
+    WHEN node.token.type = TokenTypeID('PLUS')
+        OR node.token.type = TokenTypeID('MINUS')
+        OR node.token.type = TokenTypeID('MUL')
+        OR node.token.type = TokenTypeID('INTEGER_DIV')
+        OR node.token.type = TokenTypeID('FLOAT_DIV');
         RETURN SemanticAnalyzer_Visit_BinOp(p_Node);
 
-    WHEN node.token.type = PROCEDURE;
+    WHEN node.token.type = TokenTypeID('PROCEDURE');
         RETURN SemanticAnalyzer_Visit_ProcedureDecl(p_Node);
 
-    WHEN node.token.type = VARDECL;
+    WHEN node.token.type = TokenTypeID('VARDECL');
         RETURN SemanticAnalyzer_Visit_VarDecl(p_Node);
 
-    WHEN node.token.type = ASSIGN;
+    WHEN node.token.type = TokenTypeID('ASSIGN');
         RETURN SemanticAnalyzer_Visit_Assign(p_Node);
 
-    WHEN node.token.type = ID;
+    WHEN node.token.type = TokenTypeID('ID');
         RETURN SemanticAnalyzer_Visit_Var(p_Node);
 
     OTHER;
@@ -374,7 +374,7 @@ DCL-PROC SemanticAnalyzer_Visit_Program;
 
     return_value = SemanticAnalyzer_Visit(Node.Right);
 
-    Current_Scope_ID = scope(current_Scope_ID).Enclosing_Scope;
+    Current_Scope_ID = scope(Current_Scope_ID).Enclosing_Scope;
 
     RETURN return_value;
 
@@ -458,7 +458,7 @@ DCL-PROC SemanticAnalyzer_Visit_ProcedureDecl;
         SemanticAnalyzer_Error(DUPLICATE_ID:Node.Token);
     ELSE;
         DEALLOC p_proc_symbol;
-        p_proc_symbol = ProcedureSymbol_Init(proc_name:PROCEDURE:Node.params);
+        p_proc_symbol = ProcedureSymbol_Init(proc_name:TokenTypeID('PROCEDURE'):Node.params);
         ScopedSymbolTable_Insert(proc_symbol);
     ENDIF;
 

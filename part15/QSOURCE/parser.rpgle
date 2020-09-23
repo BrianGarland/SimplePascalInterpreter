@@ -89,7 +89,7 @@ DCL-PROC Compound_Init;
     Child.NumChildren = 0;
 
     self.left = *NULL;
-    self.token = Token_Init(CHILDREN:CHILDREN);
+    self.token = Token_Init(TokenTypeID('CHILDREN'):'CHILDREN');
     self.right = p_Children;
 
     RETURN p_Node;
@@ -146,7 +146,7 @@ DCL-PROC NoOp_Init;
     p_Node = %ALLOC(%SIZE(Node_t));
 
     self.left = *NULL;
-    self.token = Token_Init(NOOP:' ');
+    self.token = Token_Init(TokenTypeID('NOOP'):' ');
     self.right = *NULL;
 
     RETURN p_Node;
@@ -166,7 +166,7 @@ DCL-PROC Program_Init;
     p_Node = %ALLOC(%SIZE(Node_t));
 
     self.left = *NULL;
-    self.token = Token_Init(PROGRAM:Name);
+    self.token = Token_Init(TokenTypeID('PROGRAM'):Name);
     self.right = Block;
 
     RETURN p_Node;
@@ -186,7 +186,7 @@ DCL-PROC Block_Init;
     p_Node = %ALLOC(%SIZE(Node_t));
 
     self.left = Declarations;
-    self.token = Token_Init(BLOCK:'');
+    self.token = Token_Init(TokenTypeID('BLOCK'):'');
     self.right = Compound_Statement;
 
     RETURN p_Node;
@@ -206,7 +206,7 @@ DCL-PROC VarDecl_Init;
     p_Node = %ALLOC(%SIZE(Node_t));
 
     self.left = Var_Node;
-    self.token = Token_Init(VARDECL:'');
+    self.token = Token_Init(TokenTypeID('VARDECL'):'');
     self.right = Type_Node;
 
     RETURN p_Node;
@@ -245,7 +245,7 @@ DCL-PROC Param_Init;
     p_Node = %ALLOC(%SIZE(Node_t));
 
     self.left = var_node;
-    self.token.type = PARAMDECL;
+    self.token.type = TokenTypeID('PARAMDECL');
     self.right = type_node;
 
     RETURN p_Node;
@@ -266,7 +266,7 @@ DCL-PROC ProcedureDecl_Init;
     p_Node = %ALLOC(%SIZE(Node_t));
 
     self.left = *NULL;
-    self.token.type = PROCEDURE;
+    self.token.type = TokenTypeID('PROCEDURE');
     self.token.value = proc_name;
     self.params = params;
     self.right = block_node;
@@ -302,8 +302,11 @@ DCL-PROC Parser_Error;
     DCL-S MsgDta VARCHAR(100);
     DCL-S MsgKey CHAR(4);
 
-    MsgDta = 'PARSER: ' + error_code + ': ' + self.current_token.type
-           + ' ' + self.current_token.value;
+    MsgDta = 'PARSER: ' + error_code + ': ''' + self.current_token.type
+           + ''' ''' + self.current_token.value
+           + ''' line: ' + %CHAR(self.current_token.lineno)
+           + ' column: ' + %CHAR(self.current_token.column);
+
 
     qmhsndpm('CPF9897':'QCPFMSG   *LIBL':MsgDta:%LEN(MsgDta):
              '*ESCAPE':'*':1:MsgKey:APIError);
@@ -341,14 +344,14 @@ DCL-PROC Parser_Program;
     DCL-S Program_Node POINTER;
     DCL-S Prog_Name LIKE(ShortString);
 
-    Parser_Eat(self:PROGRAM);
+    Parser_Eat(self:TokenTypeID('PROGRAM'));
     var_p = Parser_Variable(self);
     Prog_Name = Var_Node.Token.value;
-    Parser_Eat(self:SEMI);
+    Parser_Eat(self:TokenTypeID('SEMI'));
 
     Block_Node = Parser_Block(self);
     Program_Node = Program_Init(Prog_Name:Block_Node);
-    Parser_Eat(self:DOT);
+    Parser_Eat(self:TokenTypeID('DOT'));
 
     RETURN Program_Node;
 
@@ -392,10 +395,10 @@ DCL-PROC Parser_Declarations;
 
     DOW TRUE;
         SELECT;
-        WHEN self.current_token.type = VAR;
+        WHEN self.current_token.type = TokenTypeID('VAR');
 
-            Parser_Eat(self:VAR);
-            DOW self.current_token.type = ID;
+            Parser_Eat(self:TokenTypeID('VAR'));
+            DOW self.current_token.type = TokenTypeID('ID');
                 var_declarations_p = Parser_Variable_Declaration(self);
                 FOR j = 1 TO MAX_STATEMENTS;
                     IF var_Declarations(j).Token.Type = *BLANKS;
@@ -404,10 +407,10 @@ DCL-PROC Parser_Declarations;
                     i += 1;
                     Var_Declarations2(i) = var_Declarations(j);
                 ENDFOR;
-                Parser_Eat(self:SEMI);
+                Parser_Eat(self:TokenTypeID('SEMI'));
             ENDDO;
 
-        WHEN self.current_token.type = PROCEDURE;
+        WHEN self.current_token.type = TokenTypeID('PROCEDURE');
 
             Proc_Declarations_p = Parser_Procedure_Declarations(self);
             FOR j = 1 TO MAX_STATEMENTS;
@@ -444,21 +447,21 @@ DCL-PROC Parser_Procedure_Declarations;
     DCL-S Params POINTER;
     DCL-S proc_name LIKE(shortString);
 
-    Parser_eat(self:PROCEDURE);
+    Parser_eat(self:TokenTypeID('PROCEDURE'));
     proc_name = self.current_token.value;
-    Parser_eat(self:ID);
+    Parser_eat(self:TokenTypeID('ID'));
 
     params = *NULL;
-    IF self.current_token.type = LPAREN;
-        Parser_eat(self:LPAREN);
+    IF self.current_token.type = TokenTypeID('LPAREN');
+        Parser_eat(self:TokenTypeID('LPAREN'));
         params = Parser_formal_parameter_list(self);
-        Parser_eat(self:RPAREN);
+        Parser_eat(self:TokenTypeID('RPAREN'));
     ENDIF;
 
-    Parser_eat(self:SEMI);
+    Parser_eat(self:TokenTypeID('SEMI'));
     block_node = Parser_Block(self);
     Proc_Declarations_p = ProcedureDecl_Init(proc_name:params:block_node);
-    Parser_eat(self:SEMI);
+    Parser_eat(self:TokenTypeID('SEMI'));
 
     RETURN Proc_Declarations_p;
 
@@ -482,16 +485,16 @@ DCL-PROC Parser_Formal_Parameters;
 
     param_nodes(i) = Var_Init(self.current_token);
 
-    Parser_eat(self:ID);
+    Parser_eat(self:TokenTypeID('ID'));
 
-    DOW self.current_token.type = COMMA;
-        Parser_eat(self:COMMA);
+    DOW self.current_token.type = TokenTypeID('COMMA');
+        Parser_eat(self:TokenTypeID('COMMA'));
         i += 1;
         param_nodes(i) = Var_Init(self.current_token);
-        Parser_eat(self:ID);
+        Parser_eat(self:TokenTypeID('ID'));
     ENDDO;
 
-    Parser_eat(self:COLON);
+    Parser_eat(self:TokenTypeID('COLON'));
 
     type_node = Parser_Type_Spec(self);
 
@@ -519,7 +522,7 @@ DCL-PROC Parser_Formal_Parameter_List;
     p_params2 = %ALLOC(%SIZE(params2));
     params2.NumNodes = 0;
 
-    IF self.current_token.type <> ID;
+    IF self.current_token.type <> TokenTypeID('ID');
         RETURN p_params2;
     ENDIF;
 
@@ -529,8 +532,8 @@ DCL-PROC Parser_Formal_Parameter_List;
         params2.Nodes(params2.NumNodes) = params1.Nodes(i);
     ENDFOR;
 
-    DOW self.current_token.type = SEMI;
-        Parser_eat(self:SEMI);
+    DOW self.current_token.type = TokenTypeID('SEMI');
+        Parser_eat(self:TokenTypeID('SEMI'));
         p_params1 = Parser_Formal_Parameters(self);
         FOR i = 1 TO params1.NumNodes;
             params2.NumNodes += 1;
@@ -561,16 +564,16 @@ DCL-PROC Parser_Variable_Declaration;
     var_declarations_p = %ALLOC(%SIZE(node_t) * MAX_STATEMENTS);
 
     var_nodes(i) = Var_Init(self.current_token);
-    Parser_Eat(self:ID);
+    Parser_Eat(self:TokenTypeID('ID'));
 
-    DOW self.current_token.type = COMMA;
-        Parser_Eat(self:COMMA);
+    DOW self.current_token.type = TokenTypeID('COMMA');
+        Parser_Eat(self:TokenTypeID('COMMA'));
         i += 1;
         var_nodes(i) = Var_Init(self.current_Token);
-        Parser_Eat(self:ID);
+        Parser_Eat(self:TokenTypeID('ID'));
     ENDDO;
 
-    Parser_Eat(self:COLON);
+    Parser_Eat(self:TokenTypeID('COLON'));
 
     type_node = Parser_Type_Spec(self);
 
@@ -595,10 +598,10 @@ DCL-PROC Parser_Type_Spec;
 
     Token = self.current_token;
 
-    IF self.current_token.type = INTEGER;
-        Parser_Eat(self:INTEGER);
+    IF self.current_token.type = TokenTypeID('INTEGER');
+        Parser_Eat(self:TokenTypeID('INTEGER'));
     ELSE;
-        Parser_Eat(self:REAL);
+        Parser_Eat(self:TokenTypeID('REAL'));
     ENDIF;
 
     Node = Type_Init(Token);
@@ -621,9 +624,9 @@ DCL-PROC Parser_Compound_Statement;
     DCL-S I UNS(10);
     DCL-S Nodes POINTER DIM(MAX_STATEMENTS);
 
-    Parser_Eat(self:BEGIN);
+    Parser_Eat(self:TokenTypeID('BEGIN'));
     Nodes = Parser_Statement_List(self);
-    Parser_Eat(self:END);
+    Parser_Eat(self:TokenTypeID('END'));
 
     p_RootNode = Compound_Init();
     p_RootChildren = RootNode.Right;
@@ -654,8 +657,8 @@ DCL-PROC Parser_Statement_List;
     Results(1) = Parser_Statement(self);
     I = 1;
 
-    DOW self.current_token.type = SEMI;
-        Parser_Eat(self:SEMI);
+    DOW self.current_token.type = TokenTypeID('SEMI');
+        Parser_Eat(self:TokenTypeID('SEMI'));
         i += 1;
         Results(i) = Parser_Statement(Self);
     ENDDO;
@@ -671,9 +674,9 @@ DCL-PROC Parser_Statement;
         self LIKEDS(Parser_t);
     END-PI;
 
-    IF self.current_token.type = BEGIN;
+    IF self.current_token.type = TokenTypeID('BEGIN');
         RETURN parser_compound_statement(self);
-    ELSEIF self.current_token.type = ID;
+    ELSEIF self.current_token.type = TokenTypeID('ID');
         RETURN parser_assignment_statement(self);
     ELSE;
         RETURN parser_empty(self);
@@ -693,7 +696,7 @@ DCL-PROC Parser_Assignment_Statement;
 
     left = Parser_Variable(self);
     token = self.current_token;
-    Parser_Eat(self:ASSIGN);
+    Parser_Eat(self:TokenTypeID('ASSIGN'));
     right = Parser_Expr(self);
 
     RETURN Assign_Init(left:token:right);
@@ -711,7 +714,7 @@ DCL-PROC Parser_Variable;
     DCL-S node POINTER;
 
     node = Var_Init(self.current_token);
-    Parser_Eat(self:ID);
+    Parser_Eat(self:TokenTypeID('ID'));
 
     RETURN node;
 
@@ -746,15 +749,15 @@ DCL-PROC Parser_Expr;
 
     node = Parser_Term(self);
 
-    DOW self.current_token.type = PLUS
-        OR self.current_token.type = MINUS;
+    DOW self.current_token.type = TokenTypeID('PLUS')
+        OR self.current_token.type = TokenTypeID('MINUS');
 
         token = self.current_token;
 
-        IF token.type = PLUS;
-            Parser_Eat(self:PLUS);
-        ELSEIF token.type = MINUS;
-            Parser_Eat(self:MINUS);
+        IF token.type = TokenTypeID('PLUS');
+            Parser_Eat(self:TokenTypeID('PLUS'));
+        ELSEIF token.type = TokenTypeID('MINUS');
+            Parser_Eat(self:TokenTypeID('MINUS'));
         ENDIF;
 
         node = BinOp_init(node:token:parser_term(self));
@@ -779,18 +782,18 @@ DCL-PROC Parser_Term;
 
     node = Parser_Factor(self);
 
-    DOW self.current_token.type = MUL
-        OR self.current_token.type = INTEGER_DIV
-        OR self.current_token.type = FLOAT_DIV;
+    DOW self.current_token.type = TokenTypeID('MUL')
+        OR self.current_token.type = TokenTypeID('INTEGER_DIV')
+        OR self.current_token.type = TokenTypeID('FLOAT_DIV');
 
         token = self.current_token;
 
-        IF token.type = MUL;
-            Parser_Eat(self:MUL);
-        ELSEIF token.type = INTEGER_DIV;
-            Parser_Eat(self:INTEGER_DIV);
-        ELSEIF token.type = FLOAT_DIV;
-            Parser_Eat(self:FLOAT_DIV);
+        IF token.type = TokenTypeID('MUL');
+            Parser_Eat(self:TokenTypeID('MUL'));
+        ELSEIF token.type = TokenTypeID('INTEGER_DIV');
+            Parser_Eat(self:TokenTypeID('INTEGER_DIV'));
+        ELSEIF token.type = TokenTypeID('FLOAT_DIV');
+            Parser_Eat(self:TokenTypeID('FLOAT_DIV'));
         ENDIF;
 
         node = BinOp_init(node:token:parser_factor(self));
@@ -814,28 +817,28 @@ DCL-PROC Parser_Factor;
 
     token = self.current_token;
 
-    IF token.type = PLUS;
-        Parser_Eat(self:PLUS);
+    IF token.type = TokenTypeID('PLUS');
+        Parser_Eat(self:TokenTypeID('PLUS'));
         node = UnaryOp_Init(token:Parser_Factor(self));
         RETURN node;
 
-    ELSEIF token.type = MINUS;
-        Parser_Eat(self:MINUS);
+    ELSEIF token.type = TokenTypeID('MINUS');
+        Parser_Eat(self:TokenTypeID('MINUS'));
         node = UnaryOp_Init(token:Parser_Factor(self));
         RETURN node;
 
-    ELSEIF token.type = INTEGER_CONST;
-        Parser_Eat(self:INTEGER_CONST);
+    ELSEIF token.type = TokenTypeID('INTEGER_CONST');
+        Parser_Eat(self:TokenTypeID('INTEGER_CONST'));
         RETURN Num_Init(token);
 
-    ELSEIF token.type = REAL_CONST;
-        Parser_Eat(self:REAL_CONST);
+    ELSEIF token.type = TokenTypeID('REAL_CONST');
+        Parser_Eat(self:TokenTypeID('REAL_CONST'));
         RETURN Num_Init(token);
 
-    ELSEIF token.type = LPAREN;
-        Parser_Eat(self:LPAREN);
+    ELSEIF token.type = TokenTypeID('LPAREN');
+        Parser_Eat(self:TokenTypeID('LPAREN'));
         node = Parser_expr(self);
-        Parser_Eat(self:RPAREN);
+        Parser_Eat(self:TokenTypeID('RPAREN'));
         RETURN node;
 
     ELSE;
@@ -857,7 +860,7 @@ DCL-PROC Parser_Parse EXPORT;
 
     Node = Parser_Program(self);
 
-    IF self.current_token.type <> EOF;
+    IF self.current_token.type <> TokenTypeID('EOF');
         Parser_Error(UNEXPECTED_TOKEN:self);
     ENDIF;
 

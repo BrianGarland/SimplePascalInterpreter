@@ -5,6 +5,17 @@ CTL-OPT NOMAIN;
 /INCLUDE headers/util.rpgle_h
 /INCLUDE headers/lexer.rpgle_h
 
+DCL-DS TOKEN_TYPES QUALIFIED DIM(30);
+    id    LIKE(ShortString);
+    value LIKE(ShortString);
+END-DS;
+
+
+DCL-DS RESERVED_KEYWORDS QUALIFIED DIM(8);
+    id    LIKE(ShortString);
+    value LIKE(ShortString);
+END-DS;
+
 
 
 //--------------------------------------
@@ -36,6 +47,49 @@ END-PROC;
 
 
 
+DCL-PROC TokenTypeID EXPORT;
+DCL-PI *N LIKE(ShortString);
+     TokenValue LIKE(ShortString) CONST;
+END-PI;
+
+    DCL-S i UNS(5);
+
+    // If an ID was passed in, return it
+    i = %LOOKUP(TokenValue:TOKEN_TYPES(*).id);
+    IF i <> 0;
+        RETURN TOKEN_TYPES(i).id;
+    ENDIF;
+
+    // Not and ID so look for a value
+    i = %LOOKUP(TokenValue:TOKEN_TYPES(*).value);
+    IF i <> 0;
+        RETURN TOKEN_TYPES(i).id;
+    ELSE;
+        RETURN NULL;
+    ENDIF;
+
+END-PROC;
+
+
+
+DCL-PROC TokenTypeValue EXPORT;
+DCL-PI *N LIKE(ShortString);
+     TokenId LIKE(ShortString) CONST;
+END-PI;
+
+    DCL-S i UNS(5);
+
+    i = %LOOKUP(TokenId:TOKEN_TYPES(*).id);
+    IF i <> 0;
+        RETURN TOKEN_TYPES(i).value;
+    ELSE;
+        RETURN NULL;
+    ENDIF;
+
+END-PROC;
+
+
+
 //--------------------------------------
 // Lexer
 //--------------------------------------
@@ -47,6 +101,45 @@ DCL-PROC Lexer_Init EXPORT;
 
     DCL-DS Self LIKEDS(Lexer_t) INZ(*LIKEDS);
 
+    // Single-character token types
+    TOKEN_TYPES(01).id    = 'PLUS';
+    TOKEN_TYPES(01).value = '+';
+    TOKEN_TYPES(02).id    = 'MINUS';
+    TOKEN_TYPES(02).value = '-';
+    TOKEN_TYPES(03).id    = 'MUL';
+    TOKEN_TYPES(03).value = '*';
+    TOKEN_TYPES(04).id    = 'FLOAT_DIV';
+    TOKEN_TYPES(04).value = '/';
+    TOKEN_TYPES(05).id    = 'LPAREN';
+    TOKEN_TYPES(05).value = '(';
+    TOKEN_TYPES(06).id    = 'RPAREN';
+    TOKEN_TYPES(06).value = ')';
+    TOKEN_TYPES(07).id    = 'SEMI';
+    TOKEN_TYPES(07).value = ';';
+    TOKEN_TYPES(08).id    = 'DOT';
+    TOKEN_TYPES(08).value = '.';
+    TOKEN_TYPES(09).id    = 'COLON';
+    TOKEN_TYPES(09).value = ':';
+    TOKEN_TYPES(10).id    = 'COMMA';
+    TOKEN_TYPES(10).value = ',';
+
+    // Block of reserved keywords
+    TOKEN_TYPES(11).id    = 'PROGRAM';
+    TOKEN_TYPES(11).value = 'PROGRAM';
+    TOKEN_TYPES(12).id    = 'INTEGER';
+    TOKEN_TYPES(12).value = 'INTEGER';
+    TOKEN_TYPES(13).id    = 'REAL';
+    TOKEN_TYPES(13).value = 'REAL';
+    TOKEN_TYPES(14).id    = 'INTEGER_DIV';
+    TOKEN_TYPES(14).value = 'DIV';
+    TOKEN_TYPES(15).id    = 'VAR';
+    TOKEN_TYPES(15).value = 'VAR';
+    TOKEN_TYPES(16).id    = 'PROCEDURE';
+    TOKEN_TYPES(16).value = 'PROCEDURE';
+    TOKEN_TYPES(17).id    = 'BEGIN';
+    TOKEN_TYPES(17).value = 'BEGIN';
+    TOKEN_TYPES(18).id    = 'END';
+    TOKEN_TYPES(18).value = 'END';
     RESERVED_KEYWORDS(1).id    = 'PROGRAM';
     RESERVED_KEYWORDS(1).value = 'PROGRAM';
     RESERVED_KEYWORDS(2).id    = 'INTEGER';
@@ -63,6 +156,32 @@ DCL-PROC Lexer_Init EXPORT;
     RESERVED_KEYWORDS(7).value = 'BEGIN';
     RESERVED_KEYWORDS(8).id    = 'END';
     RESERVED_KEYWORDS(8).value = 'END';
+
+    // Misc.
+    TOKEN_TYPES(19).id    = 'ID';
+    TOKEN_TYPES(19).value = 'ID';
+    TOKEN_TYPES(20).id    = 'INTEGER_CONST';
+    TOKEN_TYPES(20).value = 'INTEGER_CONST';
+    TOKEN_TYPES(21).id    = 'REAL_CONST';
+    TOKEN_TYPES(21).value = 'REAL_CONST';
+    TOKEN_TYPES(22).id    = 'ASSIGN';
+    TOKEN_TYPES(22).value = ':=';
+    TOKEN_TYPES(23).id    = 'EOF';
+    TOKEN_TYPES(23).value = 'EOF';
+    TOKEN_TYPES(24).id    = 'CHILDREN';
+    TOKEN_TYPES(24).value = 'CHILDREN';
+    TOKEN_TYPES(25).id    = 'NOOP';
+    TOKEN_TYPES(25).value = 'NOOP';
+    TOKEN_TYPES(26).id    = 'BLOCK';
+    TOKEN_TYPES(26).value = 'BLOCK';
+    TOKEN_TYPES(27).id    = 'TYPE';
+    TOKEN_TYPES(27).value = 'TYPE';
+    TOKEN_TYPES(28).id    = 'VARDECL';
+    TOKEN_TYPES(28).value = 'VARDECL';
+    TOKEN_TYPES(29).id    = 'PARAM';
+    TOKEN_TYPES(29).value = 'PARAM';
+    TOKEN_TYPES(30).id    = 'NONE';
+    TOKEN_TYPES(30).value = x'FF';
 
     self.text = text;
     self.pos = 1;
@@ -107,7 +226,7 @@ DCL-PROC Lexer_Advance;
 
     self.pos += 1;
     IF self.pos > %LEN(self.text);
-        self.current_char = NONE; // Indicates end of input
+        self.current_char = TokenTypeValue('NONE'); // Indicates end of input
     ELSE;
         self.current_char = %SUBST(self.text:self.pos:1);
         self.column += 1;
@@ -128,7 +247,7 @@ DCL-PROC Lexer_Peek;
 
     Peek_Pos = self.pos + 1;
     IF Peek_Pos > %LEN(Self.text);
-        RETURN NONE;
+        RETURN TokenTypeValue('NONE');
     ELSE;
         RETURN %SUBST(self.text:Peek_Pos:1);
     ENDIF;
@@ -141,7 +260,7 @@ DCL-PROC Lexer_Skip_Whitespace;
         self LIKEDS(Lexer_t);
     END-PI;
 
-    DOW self.current_char <> NONE AND isSpace(self.current_char);
+    DOW self.current_char <> TokenTypeValue('NONE') AND isSpace(self.current_char);
         Lexer_Advance(self);
     ENDDO;
 
@@ -176,7 +295,7 @@ DCL-PROC Lexer_Number;
 
     DCL-S result LIKE(ShortString) INZ('');
 
-    DOW self.current_char <> NONE AND isDigit(self.current_char);
+    DOW self.current_char <> TokenTypeValue('NONE') AND isDigit(self.current_char);
         result += self.current_char;
         Lexer_Advance(self);
     ENDDO;
@@ -184,7 +303,7 @@ DCL-PROC Lexer_Number;
     IF self.current_char = '.';
         result += self.current_char;
         Lexer_Advance(self);
-        DOW self.current_char <> NONE AND isDigit(self.current_char);
+        DOW self.current_char <> TokenTypeValue('NONE') AND isDigit(self.current_char);
             result += self.current_char;
             Lexer_Advance(self);
         ENDDO;
@@ -209,7 +328,7 @@ DCL-PROC Lexer_ID;
     DCL-S i      UNS(10);
     DCL-S Result LIKE(ShortString) INZ('');
 
-    DOW Self.Current_Char <> NONE AND isAlNum(Self.Current_Char);
+    DOW Self.Current_Char <> TokenTypeValue('NONE') AND isAlNum(Self.Current_Char);
         Result += Self.Current_Char;
         Lexer_Advance(Self);
     ENDDO;
@@ -218,7 +337,7 @@ DCL-PROC Lexer_ID;
     IF i <> 0;
         Token = Token_Init(RESERVED_KEYWORDS(i).value:RESERVED_KEYWORDS(i).value:self.lineno:self.column);
     ELSE;
-        Token = Token_Init(ID:Result:self.lineno:self.column);
+        Token = Token_Init(TokenTypeID('ID'):Result:self.lineno:self.column);
     ENDIF;
 
     RETURN Token;
@@ -232,7 +351,9 @@ DCL-PROC Lexer_Get_Next_Token EXPORT;
         self LIKEDS(Lexer_t);
     END-PI;
 
-    DOW self.current_char <> NONE;
+    DCL-DS SingleCharToken LIKEDS(Lexer_t);
+
+    DOW self.current_char <> TokenTypeValue('NONE');
 
         SELECT;
         WHEN isSpace(self.current_char);
@@ -253,58 +374,25 @@ DCL-PROC Lexer_Get_Next_Token EXPORT;
         WHEN self.current_char = ':' AND Lexer_Peek(self) = '=';
             Lexer_Advance(self);
             Lexer_Advance(self);
-            RETURN Token_Init(ASSIGN:':=':self.lineno:self.column);
-
-        WHEN self.current_char = ';';
-            Lexer_Advance(self);
-            RETURN Token_Init(SEMI:';':self.lineno:self.column);
-
-        WHEN self.current_char = ':';
-            Lexer_Advance(self);
-            RETURN Token_Init(COLON:':':self.lineno:self.column);
-
-        WHEN self.current_char = ',';
-            Lexer_Advance(self);
-            RETURN Token_Init(COMMA:',':self.lineno:self.column);
-
-        WHEN self.current_char = '+';
-            Lexer_Advance(self);
-            RETURN Token_Init(PLUS:'+':self.lineno:self.column);
-
-        WHEN self.current_char = '-';
-            Lexer_Advance(self);
-            RETURN Token_Init(MINUS:'-':self.lineno:self.column);
-
-        WHEN self.current_char = '*';
-            Lexer_Advance(self);
-            RETURN Token_Init(MUL:'*':self.lineno:self.column);
-
-        WHEN self.current_char = '/';
-            Lexer_Advance(self);
-            RETURN Token_Init(FLOAT_DIV:'/':self.lineno:self.column);
-
-        WHEN self.current_char = '(';
-            Lexer_Advance(self);
-            RETURN Token_Init(LPAREN:'(':self.lineno:self.column);
-
-        WHEN self.current_char = ')';
-            Lexer_Advance(self);
-            RETURN Token_Init(RPAREN:')':self.lineno:self.column);
-
-        WHEN self.current_char = '.';
-            Lexer_Advance(self);
-            RETURN Token_Init(DOT:'.':self.lineno:self.column);
+            RETURN Token_Init(TokenTypeID(':='):':=':self.lineno:self.column);
 
         OTHER;
-            Lexer_Error(self);
+            // Generic logic for any single character type
+            IF TokenTypeID(self.current_char) <> '';
+                // Need to save a copy so it is not affected by Lexer_Advance()
+                SingleCharToken = self;
+                Lexer_Advance(self);
+                RETURN Token_Init(TokenTypeID(SingleCharToken.current_char):SingleCharToken.current_char:
+                                  SingleCharToken.lineno:SingleCharToken.column);
+            ELSE;
+                Lexer_Error(self);
+            ENDIF;
 
         ENDSL;
 
     ENDDO;
 
-    RETURN Token_Init(EOF:NONE:self.lineno:self.column);
+    RETURN Token_Init(TokenTypeID('EOF'):'EOF':self.lineno:self.column);
 
 END-PROC;
-
-
 
