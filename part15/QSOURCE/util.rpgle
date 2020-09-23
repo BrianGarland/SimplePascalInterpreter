@@ -54,3 +54,18 @@ DCL-PROC isSpace EXPORT;
     RETURN (%SCAN(Test_Char:WhiteSpace) <> 0);
 
 END-PROC;
+
+
+
+DCL-PROC toUpper EXPORT;
+    DCL-PI *N LIKE(ShortString);
+        Input LIKE(ShortString) CONST;
+    END-PI;
+
+    DCL-C LOWER 'abcdefghijklmnopqrstuvwxyz';
+    DCL-C UPPER 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+    RETURN %XLATE(LOWER:UPPER:Input);
+
+END-PROC;
+

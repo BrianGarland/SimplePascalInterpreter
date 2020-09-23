@@ -500,7 +500,7 @@ DCL-PROC SemanticAnalyzer_Visit_VarDecl;
     DCL-S var_name  LIKE(ShortString);
 
     p_right = node.right;
-    type_name = type_node.token.value;
+    type_name = type_node.token.type;
     type_symbol = ScopedSymbolTable_Lookup(type_name:current_scope_id);
 
     p_left = node.left;

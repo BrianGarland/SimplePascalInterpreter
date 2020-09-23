@@ -80,4 +80,8 @@ DCL-PR isSpace IND;
     Test_Char CHAR(1);
 END-PR;
 
+DCL-PR toUpper LIKE(ShortString);
+    Input LIKE(ShortString) CONST;
+END-PR;
+
 /ENDIF

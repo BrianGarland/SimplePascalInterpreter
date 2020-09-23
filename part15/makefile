@@ -66,5 +66,8 @@ clean:
 	system "CRTSRCPF FILE($(BIN_LIB)/QSOURCE) RCDLEN(112)"
 	rm -f *.lib *.rpgle_h *.dspf *.rpgle *.pgm *.cmd
 
+precommit:
+	rm -f *.lib *.rpgle_h *.dspf *.rpgle *.pgm *.cmd
+	
 erase:
 	-system -qi "DLTLIB LIB($(BIN_LIB))"

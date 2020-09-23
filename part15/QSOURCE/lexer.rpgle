@@ -9,12 +9,13 @@ DCL-DS TOKEN_TYPES QUALIFIED DIM(30);
     id    LIKE(ShortString);
     value LIKE(ShortString);
 END-DS;
-
+DCL-S NUM_TOKENS UNS(5) INZ(0);
 
 DCL-DS RESERVED_KEYWORDS QUALIFIED DIM(8);
     id    LIKE(ShortString);
     value LIKE(ShortString);
 END-DS;
+DCL-S NUM_KEYWORDS UNS(5) INZ(0);
 
 
 
@@ -55,13 +56,13 @@ END-PI;
     DCL-S i UNS(5);
 
     // If an ID was passed in, return it
-    i = %LOOKUP(TokenValue:TOKEN_TYPES(*).id);
+    i = %LOOKUP(TokenValue:TOKEN_TYPES(*).id:1:NUM_TOKENS);
     IF i <> 0;
         RETURN TOKEN_TYPES(i).id;
     ENDIF;
 
     // Not and ID so look for a value
-    i = %LOOKUP(TokenValue:TOKEN_TYPES(*).value);
+    i = %LOOKUP(TokenValue:TOKEN_TYPES(*).value:1:NUM_TOKENS);
     IF i <> 0;
         RETURN TOKEN_TYPES(i).id;
     ELSE;
@@ -79,11 +80,35 @@ END-PI;
 
     DCL-S i UNS(5);
 
-    i = %LOOKUP(TokenId:TOKEN_TYPES(*).id);
+    i = %LOOKUP(TokenId:TOKEN_TYPES(*).id:1:NUM_TOKENS);
     IF i <> 0;
         RETURN TOKEN_TYPES(i).value;
     ELSE;
         RETURN NULL;
+    ENDIF;
+
+END-PROC;
+
+
+
+DCL-PROC IsReservedKeyword;
+DCL-PI *N IND;
+     token LIKE(ShortString) CONST;
+     id    LIKE(ShortString);
+END-PI;
+
+    DCL-S i UNS(5);
+    DCL-S uppercase LIKE(ShortString);
+
+    uppercase = toUpper(token);
+
+    i = %LOOKUP(uppercase:RESERVED_KEYWORDS(*).value:1:NUM_KEYWORDS);
+    IF i <> 0;
+        id = RESERVED_KEYWORDS(i).id;
+        RETURN TRUE;
+    ELSE;
+        id = '';
+        RETURN FALSE;
     ENDIF;
 
 END-PROC;
@@ -101,87 +126,130 @@ DCL-PROC Lexer_Init EXPORT;
 
     DCL-DS Self LIKEDS(Lexer_t) INZ(*LIKEDS);
 
+    DCL-S i UNS(5) INZ(0);
+    DCL-S j UNS(5) INZ(0);
+    DCL-S ynReserved IND INZ(FALSE);
+
+
+
     // Single-character token types
-    TOKEN_TYPES(01).id    = 'PLUS';
-    TOKEN_TYPES(01).value = '+';
-    TOKEN_TYPES(02).id    = 'MINUS';
-    TOKEN_TYPES(02).value = '-';
-    TOKEN_TYPES(03).id    = 'MUL';
-    TOKEN_TYPES(03).value = '*';
-    TOKEN_TYPES(04).id    = 'FLOAT_DIV';
-    TOKEN_TYPES(04).value = '/';
-    TOKEN_TYPES(05).id    = 'LPAREN';
-    TOKEN_TYPES(05).value = '(';
-    TOKEN_TYPES(06).id    = 'RPAREN';
-    TOKEN_TYPES(06).value = ')';
-    TOKEN_TYPES(07).id    = 'SEMI';
-    TOKEN_TYPES(07).value = ';';
-    TOKEN_TYPES(08).id    = 'DOT';
-    TOKEN_TYPES(08).value = '.';
-    TOKEN_TYPES(09).id    = 'COLON';
-    TOKEN_TYPES(09).value = ':';
-    TOKEN_TYPES(10).id    = 'COMMA';
-    TOKEN_TYPES(10).value = ',';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'PLUS';
+    TOKEN_TYPES(i).value = '+';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'MINUS';
+    TOKEN_TYPES(i).value = '-';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'MUL';
+    TOKEN_TYPES(i).value = '*';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'FLOAT_DIV';
+    TOKEN_TYPES(i).value = '/';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'LPAREN';
+    TOKEN_TYPES(i).value = '(';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'RPAREN';
+    TOKEN_TYPES(i).value = ')';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'SEMI';
+    TOKEN_TYPES(i).value = ';';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'DOT';
+    TOKEN_TYPES(i).value = '.';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'COLON';
+    TOKEN_TYPES(i).value = ':';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'COMMA';
+    TOKEN_TYPES(i).value = ',';
 
     // Block of reserved keywords
-    TOKEN_TYPES(11).id    = 'PROGRAM';
-    TOKEN_TYPES(11).value = 'PROGRAM';
-    TOKEN_TYPES(12).id    = 'INTEGER';
-    TOKEN_TYPES(12).value = 'INTEGER';
-    TOKEN_TYPES(13).id    = 'REAL';
-    TOKEN_TYPES(13).value = 'REAL';
-    TOKEN_TYPES(14).id    = 'INTEGER_DIV';
-    TOKEN_TYPES(14).value = 'DIV';
-    TOKEN_TYPES(15).id    = 'VAR';
-    TOKEN_TYPES(15).value = 'VAR';
-    TOKEN_TYPES(16).id    = 'PROCEDURE';
-    TOKEN_TYPES(16).value = 'PROCEDURE';
-    TOKEN_TYPES(17).id    = 'BEGIN';
-    TOKEN_TYPES(17).value = 'BEGIN';
-    TOKEN_TYPES(18).id    = 'END';
-    TOKEN_TYPES(18).value = 'END';
-    RESERVED_KEYWORDS(1).id    = 'PROGRAM';
-    RESERVED_KEYWORDS(1).value = 'PROGRAM';
-    RESERVED_KEYWORDS(2).id    = 'INTEGER';
-    RESERVED_KEYWORDS(2).value = 'INTEGER';
-    RESERVED_KEYWORDS(3).id    = 'REAL';
-    RESERVED_KEYWORDS(3).value = 'REAL';
-    RESERVED_KEYWORDS(4).id    = 'INTEGER_DIV';
-    RESERVED_KEYWORDS(4).value = 'DIV';
-    RESERVED_KEYWORDS(5).id    = 'VAR';
-    RESERVED_KEYWORDS(5).value = 'VAR';
-    RESERVED_KEYWORDS(6).id    = 'PROCEDURE';
-    RESERVED_KEYWORDS(6).value = 'PROCEDURE';
-    RESERVED_KEYWORDS(7).id    = 'BEGIN';
-    RESERVED_KEYWORDS(7).value = 'BEGIN';
-    RESERVED_KEYWORDS(8).id    = 'END';
-    RESERVED_KEYWORDS(8).value = 'END';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'PROGRAM';
+    TOKEN_TYPES(i).value = 'PROGRAM';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'INTEGER';
+    TOKEN_TYPES(i).value = 'INTEGER';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'REAL';
+    TOKEN_TYPES(i).value = 'REAL';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'INTEGER_DIV';
+    TOKEN_TYPES(i).value = 'DIV';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'VAR';
+    TOKEN_TYPES(i).value = 'VAR';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'PROCEDURE';
+    TOKEN_TYPES(i).value = 'PROCEDURE';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'BEGIN';
+    TOKEN_TYPES(i).value = 'BEGIN';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'END';
+    TOKEN_TYPES(i).value = 'END';
 
     // Misc.
-    TOKEN_TYPES(19).id    = 'ID';
-    TOKEN_TYPES(19).value = 'ID';
-    TOKEN_TYPES(20).id    = 'INTEGER_CONST';
-    TOKEN_TYPES(20).value = 'INTEGER_CONST';
-    TOKEN_TYPES(21).id    = 'REAL_CONST';
-    TOKEN_TYPES(21).value = 'REAL_CONST';
-    TOKEN_TYPES(22).id    = 'ASSIGN';
-    TOKEN_TYPES(22).value = ':=';
-    TOKEN_TYPES(23).id    = 'EOF';
-    TOKEN_TYPES(23).value = 'EOF';
-    TOKEN_TYPES(24).id    = 'CHILDREN';
-    TOKEN_TYPES(24).value = 'CHILDREN';
-    TOKEN_TYPES(25).id    = 'NOOP';
-    TOKEN_TYPES(25).value = 'NOOP';
-    TOKEN_TYPES(26).id    = 'BLOCK';
-    TOKEN_TYPES(26).value = 'BLOCK';
-    TOKEN_TYPES(27).id    = 'TYPE';
-    TOKEN_TYPES(27).value = 'TYPE';
-    TOKEN_TYPES(28).id    = 'VARDECL';
-    TOKEN_TYPES(28).value = 'VARDECL';
-    TOKEN_TYPES(29).id    = 'PARAM';
-    TOKEN_TYPES(29).value = 'PARAM';
-    TOKEN_TYPES(30).id    = 'NONE';
-    TOKEN_TYPES(30).value = x'FF';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'ID';
+    TOKEN_TYPES(i).value = 'ID';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'INTEGER_CONST';
+    TOKEN_TYPES(i).value = 'INTEGER_CONST';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'REAL_CONST';
+    TOKEN_TYPES(i).value = 'REAL_CONST';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'ASSIGN';
+    TOKEN_TYPES(i).value = ':=';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'EOF';
+    TOKEN_TYPES(i).value = 'EOF';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'CHILDREN';
+    TOKEN_TYPES(i).value = 'CHILDREN';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'NOOP';
+    TOKEN_TYPES(i).value = 'NOOP';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'BLOCK';
+    TOKEN_TYPES(i).value = 'BLOCK';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'TYPE';
+    TOKEN_TYPES(i).value = 'TYPE';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'VARDECL';
+    TOKEN_TYPES(i).value = 'VARDECL';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'PARAM';
+    TOKEN_TYPES(i).value = 'PARAM';
+    i += 1;
+    TOKEN_TYPES(i).id    = 'NONE';
+    TOKEN_TYPES(i).value = x'FF';
+
+    NUM_TOKENS = i;
+
+
+
+    // Extract reserved keywords from token list
+    FOR i = 1 TO NUM_TOKENS;
+        IF TOKEN_TYPES(i).id = 'PROGRAM';
+            ynReserved = TRUE;
+        ENDIF;
+        IF ynReserved;
+            j += 1;
+            RESERVED_KEYWORDS(j) = TOKEN_TYPES(i);
+        ENDIF;
+        IF TOKEN_TYPES(i).id = 'END';
+            ynReserved = FALSE;
+            LEAVE;
+        ENDIF;
+    ENDFOR;
+
+    NUM_KEYWORDS = j;
+
+
 
     self.text = text;
     self.pos = 1;
@@ -325,17 +393,16 @@ DCL-PROC Lexer_ID;
 
     DCL-DS Token LIKEDS(Token_t);
 
-    DCL-S i      UNS(10);
-    DCL-S Result LIKE(ShortString) INZ('');
+    DCL-S Keyword LIKE(ShortString) INZ('');
+    DCL-S Result  LIKE(ShortString) INZ('');
 
     DOW Self.Current_Char <> TokenTypeValue('NONE') AND isAlNum(Self.Current_Char);
         Result += Self.Current_Char;
         Lexer_Advance(Self);
     ENDDO;
 
-    I = %LOOKUP(Result:RESERVED_KEYWORDS(*).id);
-    IF i <> 0;
-        Token = Token_Init(RESERVED_KEYWORDS(i).value:RESERVED_KEYWORDS(i).value:self.lineno:self.column);
+    IF IsReservedKeyword(Result:Keyword);
+        Token = Token_Init(Keyword:Result:self.lineno:self.column);
     ELSE;
         Token = Token_Init(TokenTypeID('ID'):Result:self.lineno:self.column);
     ENDIF;
