@@ -1,0 +1,79 @@
+**FREE
+/IF NOT DEFINED(lexer_h)
+/DEFINE lexer_h
+
+
+
+//--------------------------------------
+// Token
+//--------------------------------------
+
+DCL-DS Token_t QUALIFIED TEMPLATE;
+    type   LIKE(ShortString) INZ('');
+    value  LIKE(ShortString) INZ('');
+    lineno UNS(5) INZ(0);
+    column UNS(5) INZ(0);
+END-DS;
+
+DCL-PR Token_Init LIKEDS(Token_t);
+    type LIKE(ShortString) VALUE;
+    value LIKE(ShortString) VALUE;
+    lineno UNS(5) VALUE OPTIONS(*NOPASS);
+    column UNS(5) VALUE OPTIONS(*NOPASS);
+END-PR;
+
+DCL-PR TokenTypeID LIKE(ShortString);
+     TokenValue LIKE(ShortString) CONST;
+END-PR;
+
+DCL-PR TokenTypeValue LIKE(ShortString);
+     TokenId LIKE(ShortString) CONST;
+END-PR;
+
+
+
+//--------------------------------------
+// Lexer
+//--------------------------------------
+
+DCL-DS Lexer_t QUALIFIED TEMPLATE;
+    text          LIKE(LongString) INZ('');
+    pos           UNS(10) INZ(1);
+    current_char  CHAR(1) INZ('');
+    lineno        UNS(5) INZ(1);
+    column        UNS(5) INZ(1);
+END-DS;
+
+DCL-PR Lexer_Init LIKEDS(Lexer_t);
+    text LIKE(LongString);
+END-PR;
+
+DCL-PR Lexer_Error;
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Advance;
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Peek LIKE(ShortString);
+    Self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Skip_Whitespace;
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Integer LIKE(ShortString);
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_ID LIKEDS(token_t);
+    self LIKEDS(Lexer_t);
+END-PR;
+
+DCL-PR Lexer_Get_Next_Token LIKEDS(token_t);
+    self LIKEDS(Lexer_t);
+END-PR;
+
+/ENDIF
