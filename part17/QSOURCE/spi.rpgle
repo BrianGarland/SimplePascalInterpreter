@@ -8,20 +8,24 @@
 
     DCL-F SPIFM WORKSTN INFDS(DSPFDS);
 
+    DCL-PI SPI;
+        ShowScope CHAR(4);
+        ShowStack CHAR(4);
+    END-PI;
+
     /INCLUDE headers/stdio.rpgle_h
     /INCLUDE headers/util.rpgle_h
+    /INCLUDE headers/memory.rpgle_h
     /INCLUDE headers/lexer.rpgle_h
     /INCLUDE headers/parser.rpgle_h
     /INCLUDE headers/symbols.rpgle_h
     /INCLUDE headers/interpret.rpgle_h
 
-    DCL-DS GLOBAL_SCOPE QUALIFIED DIM(MAX_STATEMENTS) IMPORT;
-        id    LIKE(ShortString);
-        value LIKE(ShortString);
-    END-DS;
-
     DCL-DS Scope LIKEDS(ScopedSymbolTable_t) DIM(50) IMPORT;
     DCL-S NumScopes UNS(5) IMPORT;
+
+    DCL-S Log LIKE(ShortString) DIM(10000) IMPORT;
+    DCL-S Last_Log UNS(5) IMPORT;
 
     DCL-C #EXIT      x'33'; //F3
     DCL-C #RUN       x'38'; //F8
@@ -290,6 +294,7 @@
         DCL-DS interpreter LIKEDS(Interpreter_t) INZ(*LIKEDS);
         DCL-DS lexer       LIKEDS(Lexer_t) INZ(*LIKEDS);
         DCL-DS parser      LIKEDS(Parser_t) INZ(*LIKEDS);
+        DCL-DS parser2     LIKEDS(Parser_t) INZ(*LIKEDS);
 
         DCL-DS Params      LIKEDS(Params_t) BASED(p_Params);
         DCL-DS ParamNode   LIKEDS(node_t) BASED(p_ParamNode);
@@ -297,6 +302,7 @@
         DCL-DS TypeNode    LIKEDS(node_t) BASED(p_TypeNode);
 
         DCL-S i      UNS(5);
+        DCL-S l      UNS(5);
         DCL-S p_Tree POINTER;
         DCL-S s      UNS(5);
         DCL-S Text   LIKE(LongString) INZ('');
@@ -312,82 +318,84 @@
         MONITOR;
             lexer = Lexer_Init(text);
             parser = Parser_Init(lexer);
+            parser2 = parser;
+
             p_tree = Parser_Parse(parser);
             SemanticAnalyzer_Init();
             SemanticAnalyzer_Visit(p_tree);
 
-            HistoryLines += 1;
-            History(HistoryLines) = '';
+            Interpreter = Interpreter_Init(parser2);
+            Result = Interpreter_Interpret(Interpreter);
 
-            HistoryLines += 1;
-            History(HistoryLines) = '  SCOPE (Scoped Symbol Table)';
-            HistoryLines += 1;
-            History(HistoryLines) = '  ===========================';
-            FOR s = 1 TO NumScopes;
+            IF ShowScope = '*YES';
+
                 HistoryLines += 1;
                 History(HistoryLines) = '';
+
                 HistoryLines += 1;
-                History(HistoryLines) = '  Scope Name      : '
-                                      + Scope(s).Scope_Name;
+                History(HistoryLines) = '  SCOPE (Scoped Symbol Table)';
                 HistoryLines += 1;
-                History(HistoryLines) = '  Scope Level     : '
-                                      + %CHAR(Scope(s).Scope_Level);
-                IF Scope(s).Enclosing_Scope = 0;
+                History(HistoryLines) = '  ===========================';
+                FOR s = 1 TO NumScopes;
                     HistoryLines += 1;
-                    History(HistoryLines) = '  Enclosing scope : none';
-                ELSE;
+                    History(HistoryLines) = '';
                     HistoryLines += 1;
-                    History(HistoryLines) = '  Enclosing scope : '
-                            + %CHAR(Scope(Scope(s).Enclosing_Scope).Scope_Name);
-                ENDIF;
-                HistoryLines += 1;
-                History(HistoryLines) = '  Scope (Scoped Symbol Table) Contents';
-                HistoryLines += 1;
-                History(HistoryLines) = '  ------------------------------------';
-                FOR i = 1 TO Scope(s).Symbols.NumSymbols;
-                    result = '{"name":"'
-                           + Scope(s).Symbols.Symbol(i).name + '"'
-                           + ',"category":"'
-                           + Scope(s).Symbols.Symbol(i).category + '"'
-                           + ',"type":"'
-                           + Scope(s).Symbols.Symbol(i).type;
-                    IF Scope(s).Symbols.Symbol(i).type = TokenTypeID('PROCEDURE')
-                        AND Scope(s).Symbols.Symbol(i).params <> *NULL;
-                        result += ',"parameters":[';
-                        p_Params = Scope(s).Symbols.Symbol(i).params;
-                        FOR j = 1 TO Params.NumNodes;
-                            p_ParamNode = Params.Nodes(j);
-                            p_VarNode = ParamNode.Left;
-                            p_TypeNode = ParamNode.Right;
-                            result += '{"' + VarNode.token.value + '","'
-                                    + TypeNode.token.value + '"}';
-                        ENDFOR;
-                        result += ']';
+                    History(HistoryLines) = '  Scope Name      : '
+                                          + Scope(s).Scope_Name;
+                    HistoryLines += 1;
+                    History(HistoryLines) = '  Scope Level     : '
+                                          + %CHAR(Scope(s).Scope_Level);
+                    IF Scope(s).Enclosing_Scope = 0;
+                        HistoryLines += 1;
+                        History(HistoryLines) = '  Enclosing scope : none';
+                    ELSE;
+                        HistoryLines += 1;
+                        History(HistoryLines) = '  Enclosing scope : '
+                                + %CHAR(Scope(Scope(s).Enclosing_Scope).Scope_Name);
                     ENDIF;
-                    result += '"}';
                     HistoryLines += 1;
-                    History(HistoryLines) = '  ' + result;
+                    History(HistoryLines) = '  Scope (Scoped Symbol Table) Contents';
+                    HistoryLines += 1;
+                    History(HistoryLines) = '  ------------------------------------';
+                    FOR i = 1 TO Scope(s).Symbols.NumSymbols;
+                        result = '{"name":"'
+                               + Scope(s).Symbols.Symbol(i).name + '"'
+                               + ',"category":"'
+                               + Scope(s).Symbols.Symbol(i).category + '"'
+                               + ',"type":"'
+                               + Scope(s).Symbols.Symbol(i).type;
+                        IF Scope(s).Symbols.Symbol(i).type = TokenTypeID('PROCEDURE')
+                            AND Scope(s).Symbols.Symbol(i).params <> *NULL;
+                            result += ',"parameters":[';
+                            p_Params = Scope(s).Symbols.Symbol(i).params;
+                            FOR j = 1 TO Params.NumNodes;
+                                p_ParamNode = Params.Nodes(j);
+                                p_VarNode = ParamNode.Left;
+                                p_TypeNode = ParamNode.Right;
+                                result += '{"' + VarNode.token.value + '","'
+                                        + TypeNode.token.value + '"}';
+                            ENDFOR;
+                            result += ']';
+                        ENDIF;
+                        result += '"}';
+                        HistoryLines += 1;
+                        History(HistoryLines) = '  ' + result;
+                    ENDFOR;
                 ENDFOR;
-            ENDFOR;
 
-            //lexer = Lexer_Init(text);
-            //parser = Parser_Init(lexer);
-            //interpreter = Interpreter_Init(parser);
-            //result = Interpreter_Interpret(interpreter);
+            ENDIF;
 
-            //HistoryLines += 1;
-            //History(HistoryLines) = '';
+            IF ShowStack = '*YES';
 
-            //HistoryLines += 1;
-            //History(HistoryLines) = '  Global Variables:';
-            //FOR i = 1 TO %ELEM(GLOBAL_SCOPE);
-            //    IF GLOBAL_SCOPE(i).Id <> '';
-            //        result = '  ' + GLOBAL_SCOPE(i).Id
-            //               + ' = ' + GLOBAL_SCOPE(i).Value;
-            //        HistoryLines += 1;
-            //        History(HistoryLines) = '  ' + result;
-            //    ENDIF;
-            //ENDFOR;
+                HistoryLines += 1;
+                History(HistoryLines) = '';
+
+                FOR l = 1 TO Last_Log;
+                    HistoryLines += 1;
+                    History(HistoryLines) = Log(l);
+                ENDFOR;
+
+            ENDIF;
 
         ON-ERROR;
 

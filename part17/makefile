@@ -10,11 +10,13 @@ SHELL=/QOpenSys/usr/bin/qsh
 all: $(BIN_LIB).lib spifm.dspf spi.pgm spi.cmd
 	@echo "Built all"
 
-spi.pgm: spifm.dspf util.rpgle lexer.rpgle parser.rpgle symbols.rpgle interpret.rpgle spi.rpgle
+spi.pgm: spifm.dspf util.rpgle error.rpgle memory.rpgle lexer.rpgle parser.rpgle symbols.rpgle interpret.rpgle spi.rpgle
 
 util.rpgle: headers/util.rpgle_h
 
 error.rpgle: headers/util.rpgle_h headers/error.rpgle_h
+
+memory.rpgle: headers/util.rpgle_h headers/memory.rpgle_h
 
 lexer.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h
 
@@ -22,9 +24,9 @@ parser.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h h
 
 symbols.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/symbols.rpgle_h
 
-interpret.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
+interpret.rpgle: headers/util.rpgle_h headers/error.rpgle_h headers/memory.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/interpret.rpgle_h
 
-spi.rpgle: spifm.dspf headers/stdio.rpgle_h headers/util.rpgle_h headers/error.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/symbols.rpgle_h headers/interpret.rpgle_h
+spi.rpgle: spifm.dspf headers/stdio.rpgle_h headers/util.rpgle_h headers/error.rpgle_h headers/memory.rpgle_h headers/lexer.rpgle_h headers/parser.rpgle_h headers/symbols.rpgle_h headers/interpret.rpgle_h
 
 #----------
 

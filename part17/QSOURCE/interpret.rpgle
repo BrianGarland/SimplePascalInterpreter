@@ -3,15 +3,11 @@
 CTL-OPT NOMAIN;
 
 /INCLUDE headers/util.rpgle_h
+/INCLUDE headers/memory.rpgle_h
 /INCLUDE headers/lexer.rpgle_h
 /INCLUDE headers/parser.rpgle_h
 /INCLUDE headers/interpret.rpgle_h
 
-
-DCL-DS GLOBAL_SCOPE QUALIFIED DIM(MAX_STATEMENTS) EXPORT;
-    id     LIKE(ShortString) INZ('');
-    value  LIKE(ShortString) INZ('');
-END-DS;
 
 
 DCL-PROC Interpreter_Init EXPORT;
@@ -22,6 +18,8 @@ DCL-PROC Interpreter_Init EXPORT;
     DCL-DS self LIKEDS(Interpreter_t) INZ(*LIKEDS);
 
     self.parser = parser;
+
+    Stack_Init();
 
     RETURN self;
 
@@ -113,7 +111,21 @@ DCL-PROC Interpreter_Visit_Program;
 
     DCL-DS node LIKEDS(node_t) BASED(p_node);
 
-    RETURN Interpreter_Visit(Node.Right);
+    DCL-S AR POINTER;
+    DCL-S ReturnValue LIKE(ShortString);
+
+    AR = ActivationRecord_Init(Node.Token.Value:'PROGRAM':1);
+    Stack_Push(ar);
+
+    Stack_Log('ENTER: PROGRAM ' + Node.Token.Value);
+
+    ReturnValue = Interpreter_Visit(Node.Right);
+
+    Stack_Log('LEAVE: PROGRAM ' + Node.Token.Value);
+
+    Stack_Pop();
+
+    RETURN ReturnValue;
 
 END-PROC;
 
@@ -273,18 +285,14 @@ DCL-PROC Interpreter_Visit_Assign;
     DCL-DS Node LIKEDS(Node_t) BASED(p_Node);
     DCL-DS Node2 LIKEDS(Node_t) BASED(p_Node2);
 
-    DCL-S i UNS(10);
+    DCL-S ar POINTER;
     DCL-S Var_Name LIKE(ShortString);
 
     p_Node2 = Node.Left;
     Var_Name = Node2.Token.Value;
 
-    i = %LOOKUP(Var_Name:GLOBAL_SCOPE(*).id);
-    IF i = 0;
-        i = %LOOKUP(' ':GLOBAL_SCOPE(*).id);
-    ENDIF;
-    GLOBAL_SCOPE(i).id = Var_name;
-    GLOBAL_SCOPE(i).value = Interpreter_Visit(node.right);
+    ar = stack_peak();
+    ActivationRecord_SetItem(ar:Var_name:Interpreter_Visit(node.right));
 
     RETURN '';
 
@@ -299,17 +307,13 @@ DCL-PROC Interpreter_Visit_Var;
 
     DCL-DS Node LIKEDS(Node_t) BASED(p_Node);
 
-    DCL-S i UNS(10);
+    DCL-S ar POINTER;
     DCL-S Var_Name LIKE(ShortString);
 
     Var_Name = Node.Token.Value;
 
-    i = %LOOKUP(Var_Name:GLOBAL_SCOPE(*).id);
-    IF i = 0;
-        Interpreter_Error('Name error: ' + Var_Name);
-    ELSE;
-        RETURN GLOBAL_SCOPE(i).value;
-    ENDIF;
+    ar = stack_peak();
+    RETURN ActivationRecord_GetItem(ar:Var_name);
 
 END-PROC;
 
