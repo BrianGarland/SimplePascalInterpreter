@@ -1,0 +1,65 @@
+**FREE
+/IF NOT DEFINED(memory_h)
+/DEFINE memory_h
+
+
+
+// Call Stack
+
+DCL-C MAX_STACKSIZE 100;
+
+DCL-PR Stack_Init;
+END-PR;
+
+DCL-PR Stack_Push;
+    AR   POINTER;
+END-PR;
+
+DCL-PR Stack_Pop POINTER;
+END-PR;
+
+DCL-PR Stack_Peak POINTER;
+END-PR;
+
+DCL-PR Stack_Log;
+    Message LIKE(ShortString) CONST;
+END-PR;
+
+
+// Activation Record
+
+DCL-C MAX_AR_MEMBERS 100;
+
+DCL-DS AR_Member_t QUALIFIED TEMPLATE;
+    Key   LIKE(ShortString) INZ('');
+    Value LIKE(ShortString) INZ('');
+END-DS;
+
+DCL-DS ActivationRecord_t QUALIFIED TEMPLATE;
+    Name       LIKE(ShortString) INZ('');
+    Type       LIKE(ShortString) INZ('');
+    Level      UNS(5) INZ(0);
+    NumMembers UNS(5) INZ(0);
+    Members    LIKEDS(AR_Member_t) DIM(MAX_AR_MEMBERS) INZ(*LIKEDS);
+END-DS;
+
+DCL-PR ActivationRecord_Init POINTER;
+    Name LIKE(ShortString);
+    Type LIKE(ShortString) CONST;
+    Level UNS(5) CONST;
+END-PR;
+
+DCL-PR ActivationRecord_SetItem;
+    Self  POINTER;
+    Key   LIKE(ShortString) CONST;
+    Value LIKE(ShortString) CONST;
+END-PR;
+
+DCL-PR ActivationRecord_GetItem LIKE(ShortString);
+    Self POINTER;
+    Key  LIKE(ShortString) CONST;
+END-PR;
+
+
+
+/ENDIF
